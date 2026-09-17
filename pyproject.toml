@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nanikiru"
+version = "0.1.0"
+description = "Riichi mahjong recording and manually operated single-hand training environment"
+requires-python = ">=3.11"
+dependencies = ["mahjong==2.0.0"]
+
+[tool.setuptools.packages.find]
+include = ["nanikiru*"]
