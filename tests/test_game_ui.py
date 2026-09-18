@@ -7,6 +7,65 @@ from nanikiru.game_ui import GameWindow
 
 
 class GameWindowTests(unittest.TestCase):
+    def test_training_defaults_and_auxiliary_entries(self):
+        self.assertEqual(self.ui.tabs.select(), str(self.ui.training_frame))
+        for widget in (self.ui.event_text, self.ui.json_text, self.ui.test_frame, self.ui.settings_frame):
+            self.assertEqual(self.ui.tabs.tab(widget, 'state'), 'hidden')
+            self.ui.open_page(widget)
+            self.assertEqual(self.ui.tabs.select(), str(widget))
+        self.ui.close_auxiliary()
+        self.assertEqual(self.ui.tabs.tab(self.ui.test_frame, 'state'), 'hidden')
+        self.assertFalse(self.ui.history_frame.winfo_manager())
+        self.ui.toggle_history()
+        self.assertEqual(self.ui.history_frame.winfo_manager(), 'pack')
+        self.ui.toggle_history()
+        self.assertFalse(self.ui.history_frame.winfo_manager())
+
+    def test_manual_feedback_survives_bots_and_review_selection(self):
+        from nanikiru import Discard, Tile
+        self.ui.bots_enabled.set(True)
+        self.ui.game.submit(Discard(0, Tile.parse('1m'), False), mode='fold')
+        self.ui.refresh()
+        before = self.ui.feedback_text.get('1.0', 'end')
+        self.assertIn('少 8 枚', before)
+        self.assertIn('1z / 5z / 6z', before)
+        self.assertIn('不等于综合决策错误', before)
+        self.ui.open_feedback()
+        chosen = self.ui.review_selector.get()
+        for _ in range(8):
+            self.ui.advance_bot()
+        self.assertEqual(self.ui.feedback_text.get('1.0', 'end'), before)
+        self.assertEqual(self.ui.review_selector.get(), chosen)
+        self.assertEqual(self.ui.tabs.select(), str(self.ui.review_frame))
+        self.ui.view.set('玩家 2')
+        self.ui.refresh()
+        self.assertNotIn('切 1m', self.ui.feedback_text.get('1.0', 'end'))
+        self.ui.view.set('玩家 0')
+        self.ui.preview = 0
+        self.ui.refresh()
+        self.assertIn('尚无人工弃牌', self.ui.feedback_text.get('1.0', 'end'))
+
+    def test_tenpai_review_visibility_history_and_legacy(self):
+        from test_efficiency import game_with
+        from test_rules import discard_draw
+        self.ui.game = game_with()
+        discard_draw(self.ui.game)
+        self.ui.refresh()
+        text = self.ui.tenpai_text.get("1.0", "end")
+        for expected in ("【实际选择】", "等待 3s", "等待 6s", "不含本场", "番", "符"):
+            self.assertIn(expected, text)
+        self.ui.view.set("玩家 1")
+        self.ui.refresh()
+        self.assertIn("尚无弃牌记录", self.ui.tenpai_text.get("1.0", "end"))
+        self.ui.view.set("玩家 0")
+        self.ui.preview = 0
+        self.ui.refresh()
+        self.assertIn("尚无弃牌记录", self.ui.tenpai_text.get("1.0", "end"))
+        self.ui.preview = None
+        del self.ui.game._reviews[0]["tenpai"]
+        self.ui.refresh()
+        self.assertIn("振听未知", self.ui.tenpai_text.get("1.0", "end"))
+
     def test_attack_fold_controls_preserve_recorded_mode(self):
         self.ui.human_mode.set("弃和")
         before = self.ui.game.action_count
@@ -235,11 +294,15 @@ class GameWindowTests(unittest.TestCase):
 
     def test_small_window_keeps_action_and_replay_controls(self):
         self.root.geometry("960x760")
+        self.ui.toggle_history()
         self.root.update_idletasks()
-        for widget in (self.ui.history, self.ui.submit_button, self.ui.test_button):
+        for widget in (self.ui.history, self.ui.submit_button, self.ui.feedback_text):
             y = widget.winfo_rooty() - self.root.winfo_rooty()
             self.assertGreaterEqual(y, 0)
             self.assertLessEqual(y + widget.winfo_height(), self.root.winfo_height())
+        self.ui.open_page(self.ui.test_frame)
+        self.root.update_idletasks()
+        self.assertTrue(self.ui.test_button.winfo_manager())
 
     def test_sort_preserves_state_draw_slot_and_selected_tile(self):
         before = self.ui.game.debug_state()
@@ -315,4 +378,10 @@ class GameWindowTests(unittest.TestCase):
         self.ui.submit_special()
         self.assertEqual(self.ui.data["result"]["kind"], "tsumo")
         self.assertIn("48000", self.ui.result_text.get("1.0", "end"))
+        self.assertFalse(self.ui.result_text.frame.winfo_manager())
+        self.ui.toggle_result_details()
+        self.root.update_idletasks()
+        self.assertEqual(self.ui.result_text.frame.winfo_manager(), 'pack')
+        self.ui.toggle_result_details()
+        self.assertFalse(self.ui.result_text.frame.winfo_manager())
         self.assertEqual(self.ui.decision_options, {})

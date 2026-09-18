@@ -50,6 +50,21 @@ def waits(tiles):
     return _waits(tuple(counts[i] for i in range(34)))
 
 
+def ron_restrictions(waiting, discarded, temporary, riichi):
+    """Shared whole-wait furiten rules; None means missing personal history."""
+    reasons = []
+    if set(waiting) & {index(t) for t in discarded}:
+        reasons.append("discard_furiten")
+    for name, value in (("temporary_furiten", temporary), ("riichi_furiten", riichi)):
+        if value is True:
+            reasons.append(name)
+        elif value is None:
+            reasons.append(name + "_unknown")
+        elif value is not False:
+            raise ValueError("Furiten state must be boolean or unknown")
+    return reasons
+
+
 def evaluate(player, win_tile, *, tsumo=False, round_wind="east", dealer=0,
              indicators=(), ura=(), rules=Rules(), **flags):
     """Return serializable han/fu/base payments, or None for incomplete/no-yaku hands.

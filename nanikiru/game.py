@@ -18,11 +18,12 @@ import tempfile
 
 from .models import Decision, Discard, DiscardRecord, Draw, DrawnTile, HandState, Meld, MeldKind, Phase, PlayerState, Tile
 from .recorder import RecordError, require, seat_valid
-from .scoring import Rules, TERMINALS, WINDS, evaluate, index, waits
+from .scoring import Rules, TERMINALS, WINDS, evaluate, index, waits, ron_restrictions
 from .efficiency import analyze_discards, compare_discard
 from .call_rules import call_banned
 from .decision import analyze_decision, STRATEGY_VERSION
 from .defense import analyze_defense
+from .tenpai import analyze_tenpai
 
 
 def make_tiles():
@@ -148,7 +149,8 @@ class Game:
         candidate._decision_records = list(self._decision_records)
         return candidate
 
-    def _submit(self, action, record_review, policy="manual", mode=None):
+    def _submit(self, action, record_review, policy="manual", mode=None, *,
+                review_status=True, decision_status=True, tenpai=True):
         require(not self._paused, "Game paused")
         # Validate and resolve on a candidate; failures retain all prior legal responses.
         require(policy in ("manual", "unknown-legacy", "basic-efficiency-v1", STRATEGY_VERSION), "Unknown decision policy")
@@ -162,15 +164,21 @@ class Game:
                 # Crucially observe self, not the candidate after the action.
                 observation = self.observe(action.player)
                 legal = [a for a in self.legal_actions(action.player) if isinstance(a, Discard)]
+                if not review_status:
+                    observation.pop("own_status", None)
                 analysis = analyze_discards(observation, legal)
                 candidate._reviews.append({"action_index": self.action_count + 1, "player": action.player,
                                            "observation": observation,
                                            "actual_action": json.loads(json.dumps(self._encode_action(action))),
                                            "analysis": analysis, "comparison": compare_discard(analysis, discard)})
+                if tenpai:
+                    candidate._reviews[-1]["tenpai"] = analyze_tenpai(observation, legal)
             response = isinstance(action, Decision) and action.kind in ("pass", "chi", "pon", "ron")
             if record_review and (discard is not None or response):
                 observation = self.observe(action.player)
                 legal = self.legal_actions(action.player)
+                if not decision_status:
+                    observation.pop("own_status", None)
                 candidate._decision_records.append({
                     "action_index": self.action_count + 1, "player": action.player, "policy": policy,
                     "observation": observation,
@@ -271,8 +279,8 @@ class Game:
         else:
             tile = s.pending["tile"]
             waiting = waits(p.hand.known_tiles)
-            if (index(tile) not in waiting or s.temporary_furiten[seat] or s.riichi_furiten[seat]
-                    or waiting & {index(d.tile) for d in p.discards}):
+            if (index(tile) not in waiting or ron_restrictions(
+                    waiting, [d.tile for d in p.discards], s.temporary_furiten[seat], s.riichi_furiten[seat])):
                 return None
             if s.pending["kind"] == "closed_kan":
                 # Only thirteen orphans may rob a closed kan in this local ruleset.
@@ -620,7 +628,11 @@ class Game:
 
     def observe(self, seat):
         require(seat_valid(seat), "Invalid observer seat")
-        return self._view(seat, False)
+        view = self._view(seat, False)
+        view["own_status"] = {"temporary_furiten": self._state.temporary_furiten[seat],
+                              "riichi_furiten": self._state.riichi_furiten[seat],
+                              "double_riichi": self._state.double_riichi[seat]}
+        return view
 
     def debug_view(self):
         """Explicitly privileged output; never supply to a player policy."""
@@ -671,7 +683,7 @@ class Game:
 
     def save(self, path):
         """Full debug checkpoint, not a player observation export."""
-        payload = {"format": "nanikiru-game", "version": 5, "seed": self._seed,
+        payload = {"format": "nanikiru-game", "version": 6, "seed": self._seed,
                    "dealer": self._state.dealer, "initial_wall": [str(t) for t in self._initial_wall],
                    "actions": [self._encode_action(a) for a in self._actions], "paused": self.paused,
                    "rules": asdict(self.rules), "config": self._config, "diagnostics": self._diagnostics,
@@ -694,7 +706,7 @@ class Game:
         try:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
             require(data["format"] == "nanikiru-game" and type(data["version"]) is int
-                    and data["version"] in (2, 3, 4, 5), "Requires game format v2/v3/v4/v5; v1 ordinary-draw saves cannot be replayed under full rules")
+                    and data["version"] in (2, 3, 4, 5, 6), "Requires game format v2/v3/v4/v5/v6; v1 ordinary-draw saves cannot be replayed under full rules")
             require(type(data["paused"]) is bool and (data["seed"] is None or type(data["seed"]) is int),
                     "Invalid checkpoint metadata")
             game = cls.from_wall([Tile.parse(t) for t in data["initial_wall"]], data["dealer"],
@@ -702,6 +714,8 @@ class Game:
             game._seed = data["seed"]
             policies = {r["action_index"]: r["policy"] for r in data["decision_records"]} if data["version"] >= 4 else {}
             modes = {r["action_index"]: r.get("defense", {}).get("mode") for r in data.get("decision_records", [])}
+            reviews = {r["action_index"]: r for r in data.get("reviews", [])}
+            decisions = {r["action_index"]: r for r in data.get("decision_records", [])}
             for a in data["actions"]:
                 a = dict(a)
                 kind = a.pop("type")
@@ -710,7 +724,12 @@ class Game:
                     action = Discard(**{**a, "tile": Tile(**a["tile"])})
                 else:
                     action = Decision(**{**a, "tiles": tuple(Tile(**t) for t in a["tiles"])})
-                game.submit(action, policy=policies.get(game.action_count + 1, "unknown-legacy" if data["version"] < 4 else "manual"),
+                review = reviews.get(game.action_count + 1, {})
+                decision = decisions.get(game.action_count + 1, {})
+                game._submit(action, record_review=True,
+                            review_status="own_status" in review.get("observation", {}),
+                            decision_status="own_status" in decision.get("observation", {}),
+                            tenpai="tenpai" in review, policy=policies.get(game.action_count + 1, "unknown-legacy" if data["version"] < 4 else "manual"),
                             mode=modes.get(game.action_count + 1) if data["version"] >= 5 else None)
             game._paused = data["paused"]
             require(isinstance(data["diagnostics"], list), "Invalid diagnostics")

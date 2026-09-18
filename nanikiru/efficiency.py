@@ -29,18 +29,18 @@ def _shanten(counts, special):
     return Shanten.calculate_shanten(counts, use_chiitoitsu=special, use_kokushi=special)
 
 
-def visible_counts(observation):
-    """34 counts, including the about-to-be-discarded tile exactly once."""
+def visible_tiles(observation):
+    """Physical visible tiles, with claimed river tiles counted only in melds."""
     seat = observation["observer_seat"]
     _require(type(seat) is int and 0 <= seat < 4, "A player observation is required")
     _require(not any(k in observation for k in ("seed", "wall", "remaining_wall", "reserved_wall", "omniscient")),
              "Do not pass omniscient data to efficiency analysis")
     players = observation["players"]
     _require(len(players) == 4 and [p["seat"] for p in players] == list(range(4)), "Invalid observed seats")
-    counts = [0] * 34
+    tiles = []
 
     def add(tile):
-        counts[_index(Tile(**tile))] += 1
+        tiles.append(Tile(**tile))
 
     for p in players:
         h = p["hand"]
@@ -62,6 +62,14 @@ def visible_counts(observation):
                 add(d["tile"])
     for t in observation["dora_indicators"]:
         add(t)
+    return tiles
+
+
+def visible_counts(observation):
+    """34 counts, including the about-to-be-discarded tile exactly once."""
+    counts = [0] * 34
+    for tile in visible_tiles(observation):
+        counts[_index(tile)] += 1
     _require(max(counts) <= 4, "Visible tile inventory exceeds four copies")
     return counts
 
