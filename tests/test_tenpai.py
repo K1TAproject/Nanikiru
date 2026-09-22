@@ -181,6 +181,9 @@ class TenpaiTests(unittest.TestCase):
             with self.assertRaises(RecordError):
                 Game.load(path)
             data['version'] = 5
+            for r in data['reviews'] + data['decision_records']:
+                r['observation'].pop('riichi_context', None)
+                r.pop('riichi', None)
             for r in data['reviews']:
                 del r['tenpai']
                 del r['observation']['own_status']

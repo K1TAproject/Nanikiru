@@ -7,6 +7,116 @@ from nanikiru.game_ui import GameWindow
 
 
 class GameWindowTests(unittest.TestCase):
+    def test_lesson_blocks_all_submissions_and_requires_explicit_continue(self):
+        from nanikiru import Decision
+        self.ui.lesson_enabled.set(True)
+        self.ui.bots_enabled.set(True)
+        tile = self.ui.data['players'][0]['hand']['drawn_tile']['tile']
+        self.ui.select_tile((0, 13, True), tile)
+        self.ui.submit()
+        self.assertEqual(self.ui.game.action_count, 1)
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.assertFalse(self.ui.game.paused)
+        self.assertEqual(self.ui.game.observe(0)['phase'], 'await_response')
+        self.ui.advance_bot()
+        self.ui.submit()
+        self.ui.bots_enabled.set(False)
+        self.ui.follow_actor()
+        self.ui.register_action('测试响应', lambda ui: Decision(ui.data['actor'], 'pass'))
+        self.ui.special.set('测试响应')
+        self.ui.submit_special()
+        self.assertEqual(self.ui.game.action_count, 1)
+        self.ui.lesson_enabled.set(False)
+        self.ui.refresh()
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.ui.pause()
+        self.ui.continue_lesson()
+        self.assertTrue(self.ui.game.paused)
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.ui.pause()
+        self.ui.preview = 0
+        self.ui.refresh()
+        self.ui.continue_lesson()
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.ui.live()
+        self.ui.continue_lesson()
+        self.assertIsNone(self.ui.lesson_pending)
+        self.assertEqual(self.ui.game.action_count, 1)
+        self.ui.special.set('过')
+        self.ui.submit_special()
+        self.assertEqual(self.ui.game.action_count, 2)
+
+    def test_riichi_lesson_undo_new_load_and_illegal_pause(self):
+        import tempfile
+        from pathlib import Path
+        from nanikiru import Discard, Tile
+        from test_efficiency import game_with
+        self.ui.game = game_with()
+        self.ui.lesson_enabled.set(True)
+        self.ui.refresh()
+        self.ui.special.set(next(k for k, a in self.ui.decision_options.items() if a.kind == 'riichi' and a.is_tsumogiri))
+        self.ui.submit_special()
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.assertEqual(self.ui.game.review_records(0)[0]['actual_action']['kind'], 'riichi')
+        # Core illegal-action pause cannot be released by the UI's continue button.
+        with self.assertRaises(ValueError):
+            self.ui.game.submit(Discard(0, Tile.parse('9m'), True))
+        self.ui.refresh()
+        self.ui.continue_lesson()
+        self.assertTrue(self.ui.game.paused)
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.ui.undo()
+        self.assertIsNone(self.ui.lesson_pending)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'game.json'
+            game_with().save(path)
+            self.ui.lesson_pending = (id(self.ui.game), self.ui.game.action_count)
+            with patch.object(self.ui, 'replace_ok', return_value=True), patch('nanikiru.game_ui.filedialog.askopenfilename', return_value=str(path)):
+                self.ui.load()
+            self.assertIsNone(self.ui.lesson_pending)
+        self.ui.lesson_pending = (id(self.ui.game), self.ui.game.action_count)
+        self.ui.start_game(4)
+        self.assertIsNone(self.ui.lesson_pending)
+        tile = self.ui.data['players'][0]['hand']['drawn_tile']['tile']
+        self.ui.select_tile((0, 13, True), tile)
+        self.ui.submit()
+        self.assertIsNotNone(self.ui.lesson_pending)
+        self.ui.history.set('0')
+        with patch('nanikiru.game_ui.messagebox.askyesno', return_value=True):
+            self.ui.rewind()
+        self.assertIsNone(self.ui.lesson_pending)
+        self.assertEqual(self.ui.game.action_count, 0)
+
+    def test_candidate_linkage_retention_privacy_and_old_records(self):
+        from nanikiru import Discard, Tile
+        from test_efficiency import game_with
+        self.ui.game = game_with(draw='7z')
+        self.ui.game.submit(Discard(0, Tile.parse('7z'), True))
+        self.ui.refresh()
+        self.ui.open_comparison()
+        panel = self.ui.comparison_panel
+        i = next(i for i, d in enumerate(panel.choices) if str(Tile(**d['tile'])) == '4s')
+        panel.candidate_box.current(i)
+        panel.details.set(True)
+        panel.render()
+        before = self.ui.game.debug_state()
+        self.assertIn('取舍', panel.summary.get('1.0', 'end'))
+        self.assertIn('基础支付', panel.texts[1].get('1.0', 'end'))
+        self.assertNotEqual(panel.result['actual']['hand'], panel.result['alternative']['hand'])
+        self.ui.bots_enabled.set(True)
+        self.ui.advance_bot()
+        self.assertEqual(panel.candidate_box.current(), i)
+        self.assertEqual(panel.result['alternative']['discard']['tile'], {'suit': 's', 'rank': 4, 'is_red': False})
+        self.assertEqual(before.players[0].hand, self.ui.game.debug_state().players[0].hand)
+        self.ui.view.set('玩家 2')
+        self.ui.refresh()
+        self.assertIsNone(panel.result)
+        self.assertEqual(panel.texts[0].get('1.0', 'end').strip(), '')
+        self.ui.view.set('玩家 0')
+        del self.ui.game._reviews[0]['tenpai']
+        self.ui.refresh()
+        self.assertIn('信息不足', panel.summary.get('1.0', 'end'))
+
     def test_training_defaults_and_auxiliary_entries(self):
         self.assertEqual(self.ui.tabs.select(), str(self.ui.training_frame))
         for widget in (self.ui.event_text, self.ui.json_text, self.ui.test_frame, self.ui.settings_frame):
@@ -232,6 +342,7 @@ class GameWindowTests(unittest.TestCase):
         self.root = tk.Tk()
         self.root.withdraw()
         self.ui = GameWindow(self.root, Game(4))
+        self.ui.auto_pass.set(False)
         self.ui.bots_enabled.set(False)
         self.ui.refresh()
         self.root.update_idletasks()
@@ -303,6 +414,12 @@ class GameWindowTests(unittest.TestCase):
         self.ui.open_page(self.ui.test_frame)
         self.root.update_idletasks()
         self.assertTrue(self.ui.test_button.winfo_manager())
+        self.ui.toggle_history()
+        self.ui.lesson_pending = (id(self.ui.game), self.ui.game.action_count)
+        self.ui.refresh()
+        self.ui.open_page(self.ui.settings_frame)
+        self.root.update_idletasks()
+        self.assertLessEqual(self.ui.mode_hint.winfo_y() + self.ui.mode_hint.winfo_height(), self.ui.settings_frame.winfo_height())
 
     def test_sort_preserves_state_draw_slot_and_selected_tile(self):
         before = self.ui.game.debug_state()

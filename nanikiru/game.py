@@ -24,6 +24,8 @@ from .call_rules import call_banned
 from .decision import analyze_decision, STRATEGY_VERSION
 from .defense import analyze_defense
 from .tenpai import analyze_tenpai
+from .discard_rules import validate_discard, first_uninterrupted_discard
+from .riichi_decision import analyze_riichi, VERSION as RIICHI_VERSION
 
 
 def make_tiles():
@@ -150,10 +152,11 @@ class Game:
         return candidate
 
     def _submit(self, action, record_review, policy="manual", mode=None, *,
-                review_status=True, decision_status=True, tenpai=True):
+                review_status=True, decision_status=True, tenpai=True,
+                review_context=True, decision_context=True, riichi_review=True):
         require(not self._paused, "Game paused")
         # Validate and resolve on a candidate; failures retain all prior legal responses.
-        require(policy in ("manual", "unknown-legacy", "basic-efficiency-v1", STRATEGY_VERSION), "Unknown decision policy")
+        require(policy in ("manual", "unknown-legacy", "basic-efficiency-v1", STRATEGY_VERSION, RIICHI_VERSION, "ui-auto-pass-v1"), "Unknown decision policy")
         require(mode in (None, "attack", "fold"), "Unknown decision mode")
         candidate = self._candidate()
         try:
@@ -164,6 +167,8 @@ class Game:
                 # Crucially observe self, not the candidate after the action.
                 observation = self.observe(action.player)
                 legal = [a for a in self.legal_actions(action.player) if isinstance(a, Discard)]
+                if not review_context:
+                    observation.pop("riichi_context", None)
                 if not review_status:
                     observation.pop("own_status", None)
                 analysis = analyze_discards(observation, legal)
@@ -174,9 +179,11 @@ class Game:
                 if tenpai:
                     candidate._reviews[-1]["tenpai"] = analyze_tenpai(observation, legal)
             response = isinstance(action, Decision) and action.kind in ("pass", "chi", "pon", "ron")
-            if record_review and (discard is not None or response):
+            if record_review and (discard is not None or response or policy == RIICHI_VERSION):
                 observation = self.observe(action.player)
                 legal = self.legal_actions(action.player)
+                if not decision_context:
+                    observation.pop("riichi_context", None)
                 if not decision_status:
                     observation.pop("own_status", None)
                 candidate._decision_records.append({
@@ -184,6 +191,9 @@ class Game:
                     "observation": observation,
                     "actual_action": json.loads(json.dumps(self._encode_action(action))),
                     "analysis": analyze_decision(observation, legal)})
+                if riichi_review and discard is not None:
+                    record = candidate._decision_records[-1]
+                    record["riichi"] = analyze_riichi(observation, legal, mode or "attack")
                 if mode is not None and policy != "basic-efficiency-v1":
                     record = candidate._decision_records[-1]
                     record["defense"] = analyze_defense(observation, legal, mode, attack=record["analysis"])
@@ -241,15 +251,8 @@ class Game:
 
     def _discard(self, action, riichi=False):
         s = self._state
-        require(isinstance(action.tile, Tile) and type(action.is_tsumogiri) is bool,
-                "Specify a known tile and whether it is the drawn tile")
         hand = s.players[s.actor].hand
-        if action.is_tsumogiri:
-            require(hand.drawn_tile is not None and action.tile == hand.drawn_tile.tile, "Not the drawn tile")
-        else:
-            require(action.tile in hand.known_tiles, "Tile not in concealed hand")
-        require(not s.players[s.actor].riichi or action.is_tsumogiri, "After riichi only discard the drawn tile")
-        require(index(action.tile) not in s.kuikae, "Kuikae (swap discard after call) is forbidden")
+        validate_discard(hand, s.players[s.actor].riichi, action, s.kuikae)
         if not action.is_tsumogiri:
             hand.known_tiles.remove(action.tile)
             if hand.drawn_tile:
@@ -365,7 +368,7 @@ class Game:
             p.riichi = True
             p.score -= 1000
             s.riichi_sticks += 1
-            s.double_riichi[source] = not s.interrupted and len(p.discards) == 1
+            s.double_riichi[source] = first_uninterrupted_discard(s.interrupted, len(p.discards) - 1)
             s.ippatsu[source] = True
             self._events.append({"type": "riichi", "player": source})
         if all(p.riichi for p in s.players):
@@ -632,6 +635,8 @@ class Game:
         view["own_status"] = {"temporary_furiten": self._state.temporary_furiten[seat],
                               "riichi_furiten": self._state.riichi_furiten[seat],
                               "double_riichi": self._state.double_riichi[seat]}
+        view["riichi_context"] = {"double_eligible": first_uninterrupted_discard(
+            self._state.interrupted, len(self._state.players[seat].discards))}
         return view
 
     def debug_view(self):
@@ -683,7 +688,7 @@ class Game:
 
     def save(self, path):
         """Full debug checkpoint, not a player observation export."""
-        payload = {"format": "nanikiru-game", "version": 6, "seed": self._seed,
+        payload = {"format": "nanikiru-game", "version": 7, "seed": self._seed,
                    "dealer": self._state.dealer, "initial_wall": [str(t) for t in self._initial_wall],
                    "actions": [self._encode_action(a) for a in self._actions], "paused": self.paused,
                    "rules": asdict(self.rules), "config": self._config, "diagnostics": self._diagnostics,
@@ -706,7 +711,7 @@ class Game:
         try:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
             require(data["format"] == "nanikiru-game" and type(data["version"]) is int
-                    and data["version"] in (2, 3, 4, 5, 6), "Requires game format v2/v3/v4/v5/v6; v1 ordinary-draw saves cannot be replayed under full rules")
+                    and data["version"] in (2, 3, 4, 5, 6, 7), "Requires game format v2/v3/v4/v5/v6/v7; v1 ordinary-draw saves cannot be replayed under full rules")
             require(type(data["paused"]) is bool and (data["seed"] is None or type(data["seed"]) is int),
                     "Invalid checkpoint metadata")
             game = cls.from_wall([Tile.parse(t) for t in data["initial_wall"]], data["dealer"],
@@ -729,6 +734,9 @@ class Game:
                 game._submit(action, record_review=True,
                             review_status="own_status" in review.get("observation", {}),
                             decision_status="own_status" in decision.get("observation", {}),
+                            review_context="riichi_context" in review.get("observation", {}),
+                            decision_context="riichi_context" in decision.get("observation", {}),
+                            riichi_review="riichi" in decision,
                             tenpai="tenpai" in review, policy=policies.get(game.action_count + 1, "unknown-legacy" if data["version"] < 4 else "manual"),
                             mode=modes.get(game.action_count + 1) if data["version"] >= 5 else None)
             game._paused = data["paused"]

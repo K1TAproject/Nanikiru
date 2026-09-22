@@ -3,7 +3,7 @@
 from collections import Counter
 from copy import deepcopy
 
-from .efficiency import analyze_discards, visible_tiles
+from .efficiency import analyze_discards, visible_inventory, physical_capacity
 from .models import HandState, Meld, MeldKind, PlayerState, Tile
 from .scoring import Rules, evaluate, index, ron_restrictions, tile34, waits
 
@@ -22,11 +22,7 @@ ASSUMPTIONS = {
 def analyze_tenpai(observation, legal_discards):
     """Return all candidates without reordering or recommending an action."""
     basic = analyze_discards(observation, legal_discards)
-    seen = Counter(visible_tiles(observation))
-    for tile, count in seen.items():
-        capacity = 1 if tile.is_red else (3 if tile.rank == 5 and tile.suit != "z" else 4)
-        if count > capacity:
-            raise ValueError("Visible physical tile inventory exceeded")
+    seen = visible_inventory(observation)
     seat = observation["observer_seat"]
     own = observation["players"][seat]
     status = observation.get("own_status", {})
@@ -65,7 +61,7 @@ def analyze_tenpai(observation, legal_discards):
             variants = [normal] + ([Tile(normal.suit, 5, True)] if normal.rank == 5 and normal.suit != "z" else [])
             physical = []
             for tile in variants:
-                capacity = 1 if tile.is_red else (3 if len(variants) == 2 else 4)
+                capacity = physical_capacity(tile)
                 # A completion may be exhausted in public information, but cannot
                 # contain a fifth tile (or a second red five) in the winning hand.
                 if held[tile] >= capacity:

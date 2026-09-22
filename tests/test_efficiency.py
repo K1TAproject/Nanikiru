@@ -191,7 +191,7 @@ class ReviewRecordTests(unittest.TestCase):
             self.assertEqual(g.debug_reviews(), loaded.debug_reviews())
             self.assertTrue(loaded.paused)
             data = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(data["version"], 6)
+            self.assertEqual(data["version"], 7)
             for key in ("score", "version", "observation", "missing"):
                 bad = deepcopy(data)
                 if key == "score":
@@ -212,4 +212,5 @@ class ReviewRecordTests(unittest.TestCase):
             for record in expected:
                 del record["tenpai"]
                 del record["observation"]["own_status"]
+                record["observation"].pop("riichi_context", None)
             self.assertEqual(Game.load(path).debug_reviews(), expected)

@@ -1,6 +1,7 @@
 """Shape efficiency from a player's observation only; no Game or UI dependency."""
 
 from copy import deepcopy
+from collections import Counter
 from dataclasses import asdict
 from functools import lru_cache
 
@@ -63,6 +64,18 @@ def visible_tiles(observation):
     for t in observation["dora_indicators"]:
         add(t)
     return tiles
+
+
+def physical_capacity(tile):
+    return 1 if tile.is_red else (3 if tile.rank == 5 and tile.suit != "z" else 4)
+
+
+def visible_inventory(observation):
+    """Physical inventory, retaining red identity for conditional projections."""
+    seen = Counter(visible_tiles(observation))
+    for tile, count in seen.items():
+        _require(count <= physical_capacity(tile), "Visible physical tile inventory exceeded")
+    return seen
 
 
 def visible_counts(observation):

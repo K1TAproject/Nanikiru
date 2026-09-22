@@ -1,0 +1,10 @@
+can't invoke "event" command: application has been destroyed
+    while executing
+"event generate $w <<ThemeChanged>>"
+    (procedure "ttk::ThemeChanged" line 6)
+    invoked from within
+"ttk::ThemeChanged"
+----------------------------------------------------------------------
+Ran 124 tests in 132.346s
+
+OK

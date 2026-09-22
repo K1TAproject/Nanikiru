@@ -1,0 +1,29 @@
+{
+  "ui_single_hand": {
+    "actions": 76,
+    "result": "ron",
+    "sources": [
+      "manual",
+      "riichi-conservative-v1",
+      "ui-auto-pass-v1"
+    ]
+  },
+  "regular": {
+    "seconds": 0.5489361999789253,
+    "candidates": 13,
+    "effective_draws": 60,
+    "tenpai_branches": 73
+  },
+  "one-away": {
+    "seconds": 0.014600900001823902,
+    "candidates": 13,
+    "effective_draws": 8,
+    "tenpai_branches": 8
+  },
+  "pairs": {
+    "seconds": 0.06839139992371202,
+    "candidates": 9,
+    "effective_draws": 12,
+    "tenpai_branches": 24
+  }
+}

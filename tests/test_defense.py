@@ -110,6 +110,7 @@ class DefenseTests(unittest.TestCase):
             old["version"] = 4
             for r in old["decision_records"]:
                 del r["defense"]
+                r.pop("riichi", None)
             path.write_text(json.dumps(old), encoding="utf-8")
             restored = Game.load(path)
             self.assertEqual(restored.debug_decisions(), old["decision_records"])

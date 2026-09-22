@@ -20,6 +20,9 @@ if __package__ in (None, ""):
     from nanikiru.scoring import Rules, WINDS as WIND_NAMES
     from nanikiru.efficiency import summarize_reviews
     from nanikiru.decision import STRATEGY_VERSION
+    from nanikiru.comparison_ui import ComparisonPanel
+    from nanikiru.preview_ui import PreviewPanel
+    from nanikiru.riichi_decision import choose_riichi_action, VERSION as RIICHI_VERSION
 else:
     from .bot import choose_action, choose_yaku_action
     from .game import Game
@@ -27,6 +30,9 @@ else:
     from .scoring import Rules, WINDS as WIND_NAMES
     from .efficiency import summarize_reviews
     from .decision import STRATEGY_VERSION
+    from .comparison_ui import ComparisonPanel
+    from .preview_ui import PreviewPanel
+    from .riichi_decision import choose_riichi_action, VERSION as RIICHI_VERSION
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -60,6 +66,9 @@ class GameWindow:
         self.preview = None
         self.dirty = False
         self.testing = False
+        self.lesson_pending = None
+        self.lesson_enabled = tk.BooleanVar(value=False)
+        self.auto_pass = tk.BooleanVar(value=True)
         self.queue = Queue()
         self.human_seat = self.game.observe(0)["dealer_seat"]
         self.view = tk.StringVar(value=f"玩家 {self.human_seat}")
@@ -105,9 +114,9 @@ class GameWindow:
         self.settings_frame = ttk.Frame(self.tabs, padding=12)
         ttk.Label(self.settings_frame, text="对局设置", font=("Microsoft YaHei", 18, "bold")).pack(anchor="w", pady=(0, 8))
         ttk.Label(self.settings_frame, text="规则开关仅在新局生效；模式切换只影响后续决策。").pack(anchor="w", pady=(0, 8))
-        ttk.Button(self.settings_frame, text="按种子开局", command=self.new_game).pack(anchor="w", pady=4)
+        ttk.Button(self.settings_frame, text="按种子开局", command=self.new_game).place(x=220, y=12)
         toolbar = ttk.LabelFrame(self.settings_frame, text="视角与牌面", padding=8)
-        toolbar.pack(fill="x", pady=4)
+        toolbar.pack(fill="x", pady=2)
         ttk.Label(toolbar, text="视角：").pack(side="left", padx=(12, 0))
         box = ttk.Combobox(toolbar, textvariable=self.view, width=13, state="readonly",
                            values=[f"玩家 {i}" for i in range(4)] + ["全知调试"])
@@ -116,7 +125,7 @@ class GameWindow:
         ttk.Checkbutton(toolbar, text="自动理牌", variable=self.sort_tiles,
                         command=self.refresh).pack(side="left", padx=8)
         toolbar = ttk.LabelFrame(self.settings_frame, text="新局规则", padding=8)
-        toolbar.pack(fill="x", pady=4)
+        toolbar.pack(fill="x", pady=2)
         self.aka_enabled = tk.BooleanVar(value=self.game.rules.aka_dora_enabled)
         self.kan_enabled = tk.BooleanVar(value=self.game.rules.kan_dora_enabled)
         ttk.Checkbutton(toolbar, text="新局计赤宝", variable=self.aka_enabled).pack(side="left")
@@ -125,15 +134,16 @@ class GameWindow:
         ttk.Label(toolbar, text="新局场风：").pack(side="left")
         ttk.Combobox(toolbar, textvariable=self.round_wind, values=WINDS, width=3, state="readonly").pack(side="left")
         toolbar = ttk.LabelFrame(self.settings_frame, text="机器人", padding=8)
-        toolbar.pack(fill="x", pady=4)
+        toolbar.pack(fill="x", pady=2)
         ttk.Checkbutton(toolbar, text="三家机器人", variable=self.bots_enabled,
                         command=self.refresh).pack(side="left", padx=8)
-        self.bot_strategy = tk.StringVar(value="役种感知")
-        strategy_box = ttk.Combobox(toolbar, textvariable=self.bot_strategy, values=("役种感知", "基础牌效"),
+        self.bot_strategy = tk.StringVar(value="基础立直")
+        strategy_box = ttk.Combobox(toolbar, textvariable=self.bot_strategy, values=("基础立直", "役种感知", "基础牌效"),
                      state="readonly", width=8)
         strategy_box.pack(side="left")
         strategy_box.bind("<<ComboboxSelected>>", lambda event: self.update_mode_controls())
-        modes = ttk.LabelFrame(self.settings_frame, text="评估模式", padding=8)
+        ttk.Checkbutton(toolbar, text="人工弃牌后等待继续", variable=self.lesson_enabled).pack(side="left", padx=12)
+        modes = ttk.LabelFrame(self.settings_frame, text="评估模式", padding=6)
         modes.pack(fill="x")
         self.human_mode = tk.StringVar(value="进攻")
         self.bot_mode = tk.StringVar(value="进攻")
@@ -143,13 +153,16 @@ class GameWindow:
         self.bot_mode_box = ttk.Combobox(modes, textvariable=self.bot_mode, values=("进攻", "弃和"), state="readonly", width=6)
         self.bot_mode_box.pack(side="left")
         self.mode_hint = ttk.Label(self.settings_frame, text="仅影响后续决策；人工模式不代替操作")
-        self.mode_hint.pack(anchor="w", pady=8)
+        self.mode_hint.pack(anchor="w", pady=2)
+        ttk.Checkbutton(modes, text="仅有过时自动响应", variable=self.auto_pass).pack(side="left", padx=8)
         self.banner = tk.Label(root, anchor="w", padx=10, pady=5)
         self.banner.pack(fill="x")
         self.training_frame = ttk.Frame(self.tabs)
         self.feedback_frame = ttk.Frame(self.training_frame, padding=(14, 8))
         self.feedback_frame.pack(side="bottom", fill="x")
         ttk.Button(self.feedback_frame, text="展开复盘 →", command=self.open_feedback).pack(side="right", padx=(12, 0))
+        ttk.Button(self.feedback_frame, text="候选比较", command=self.open_comparison).pack(side="right", padx=4)
+        ttk.Button(self.feedback_frame, text="推进／立直", command=self.open_preview).pack(side="right", padx=4)
         self.feedback_text = ScrolledText(self.feedback_frame, height=3, wrap="word", relief="flat",
                                           bg="#f5f8f5", fg="#284b3d", font=("Microsoft YaHei", 10), borderwidth=0)
         self.feedback_text.pack(fill="x", expand=True)
@@ -222,7 +235,15 @@ class GameWindow:
         self.review_table.grid(row=0, column=0, sticky="nsew")
         yscroll.grid(row=0, column=1, sticky="ns")
         xscroll.grid(row=1, column=0, sticky="ew")
+        self.comparison_panel = ComparisonPanel(self.tabs, self.open_preview_history)
+        self.tabs.add(self.comparison_panel, text="候选比较")
+        self.preview_panel = PreviewPanel(self.tabs)
         self.canvas.bind("<Configure>", lambda event: self.draw_table())
+        self.lesson_bar = ttk.Frame(root, padding=(8, 4))
+        self.lesson_label = ttk.Label(self.lesson_bar, text="讲解停顿 · 弃牌已记录，尚未推进后续响应")
+        self.lesson_label.pack(side="left")
+        self.lesson_button = ttk.Button(self.lesson_bar, text="继续对局", command=self.continue_lesson)
+        self.lesson_button.pack(side="right")
         controls = ttk.Frame(root, padding=6)
         controls.pack(side="bottom", fill="x")
         self.submit_button = ttk.Button(controls, text="确认弃牌", style="Accent.TButton", command=self.submit)
@@ -248,6 +269,23 @@ class GameWindow:
         self.tabs.select(self.training_frame)
         self.refresh()
         self.poll_id = root.after(100, self.poll)
+
+    def begin_lesson(self, action):
+        if (self.lesson_enabled.get() and not self.game.observe(action.player)['result']
+                and (isinstance(action, Discard) or isinstance(action, Decision) and action.kind == 'riichi')):
+            self.lesson_pending = (id(self.game), self.game.action_count)
+
+    def continue_lesson(self):
+        if self.preview is not None or self.game.paused or self.testing or self.data['result']:
+            self.notice.set("请先退出回放、显式恢复核心暂停或等待测试完成；继续讲解不会解除这些限制。")
+            return
+        self.lesson_pending = None
+        self.refresh()
+
+    def open_comparison(self):
+        self.tabs.select(self.comparison_panel)
+        if self.feedback_record:
+            self.comparison_panel.focus_record(self.feedback_record['action_index'])
 
     def open_page(self, widget):
         self.tabs.add(widget)
@@ -300,6 +338,21 @@ class GameWindow:
                     else " 仅评价基础牌效，不代表综合最优。")
         self.put(self.feedback_text, message)
 
+    def open_preview(self):
+        self.tabs.add(self.preview_panel, text="推进／立直")
+        self.tabs.select(self.preview_panel)
+        if (self.preview is None and not self.game.paused and not self.lesson_pending
+                and self.data['phase'] == 'await_discard' and self.data["actor"] == self.seat and self.manual_turn()):
+            self.preview_panel.show_live(self.game.observe(self.seat), self.game.legal_actions(self.seat), self.submission_mode())
+
+    def open_preview_history(self):
+        self.tabs.add(self.preview_panel, text="推进／立直")
+        self.tabs.select(self.preview_panel)
+        panel = self.comparison_panel
+        if panel.records and panel.record_box.current() >= 0 and panel.candidate_box.current() >= 0:
+            self.preview_panel.focus_record(panel.records[panel.record_box.current()]['action_index'],
+                                            panel.choices[panel.candidate_box.current()])
+
     def update_mode_controls(self):
         basic = self.bot_strategy.get() == "基础牌效"
         self.bot_mode_box.configure(state="disabled" if basic else "readonly")
@@ -318,6 +371,13 @@ class GameWindow:
         self._review_context = context
         self._retained_selectors = retained
         self.selection = None
+        if self.lesson_pending and (self.lesson_pending[0] != id(self.game) or self.lesson_pending[1] != self.game.action_count):
+            self.lesson_pending = None
+        if self.lesson_pending:
+            self.lesson_bar.pack(side="bottom", fill="x", before=self.tabs)
+            self.lesson_button.configure(state="disabled" if self.game.paused or self.preview is not None or self.testing else "normal")
+        else:
+            self.lesson_bar.pack_forget()
         game = self.visible_game()
         self.omni = self.view.get() == "全知调试"
         self.seat = 0 if self.omni else int(self.view.get()[-1])
@@ -325,6 +385,7 @@ class GameWindow:
         mode = "全知调试 · 包含四家暗手与未公开牌山，禁止作为玩家输入" if self.omni else f"玩家 {self.seat} 视角 · 其余暗手已隐藏"
         self.banner.configure(text=mode + (f" | 人工：庄家 {self.human_seat}；三家机器人" if self.bots_enabled.get() else " | 全人工调试") + (f" | 只读回放 {self.preview} 手" if self.preview is not None else "")
                               + (" | 已暂停" if self.game.paused else "")
+                              + (" | 讲解停顿" if self.lesson_pending else "")
                               + (" | 未保存" if self.dirty else ""),
                               bg="#ffe0a3" if self.omni else "#e4eee8", fg="#4c3000" if self.omni else "#234538")
         self.put(self.json_text, json.dumps(self.data, ensure_ascii=False, indent=2))
@@ -350,7 +411,7 @@ class GameWindow:
             else:
                 self.notice.set("轮到庄家操作：请选择弃牌，或从下方菜单响应 / 过。")
         self.decision_options = {}
-        if self.preview is None and self.manual_turn() and (self.omni or self.seat == self.data["actor"]):
+        if not self.lesson_pending and self.preview is None and self.manual_turn() and (self.omni or self.seat == self.data["actor"]):
             for action in game.legal_actions(self.data["actor"]):
                 if isinstance(action, Decision):
                     label = ACTION_NAMES[action.kind] + (" " + " ".join(map(str, action.tiles)) if action.tiles else "")
@@ -363,6 +424,8 @@ class GameWindow:
         self.show_reviews(game)
         self.show_decisions(game)
         self.show_feedback()
+        self.comparison_panel.update_records(self.visible_reviews, self.visible_decisions, context)
+        self.preview_panel.update_records(self.visible_reviews, self.visible_decisions, context)
         self.draw_table()
 
     def show_decisions(self, game):
@@ -620,7 +683,7 @@ class GameWindow:
         for i in range(35):
             x = 420 + i * 10
             self.rect(x, 309, x + 7, 319, fill="#b9cbb4" if i * 2 < d['remaining_draws'] else "#2c5b49", outline="")
-        self.text(600, 357, f"{WINDS[WIND_NAMES.index(d['round_wind'])]} {d['hand_number']} 局  ·  {d['honba']} 本场  ·  供托 {d['riichi_sticks']}", 15)
+        self.text(600, 346, f"{WINDS[WIND_NAMES.index(d['round_wind'])]} {d['hand_number']} 局  ·  {d['honba']} 本场  ·  供托 {d['riichi_sticks']}", 15)
         self.text(515, 396, f"余牌 {d['remaining_draws']}", 22)
         self.text(515, 431, RESULT_NAMES[d['result']['kind']] if d['result'] else
                   ('响应：玩家 ' if d['phase'] == 'await_response' else '行动：玩家 ') + str(d['actor']), 12)
@@ -644,26 +707,29 @@ class GameWindow:
                 if relative in (0, 2):
                     x, y = 600 - total_width / 2 + i * step + (14 if is_drawn else 0), 715 if relative == 0 else 42
                 else:
-                    x, y = (1090 if relative == 1 else 25) + (i % 2) * 40, 207 + (i // 2) * 57 + (8 if is_drawn else 0)
+                    x, y = (1115 if relative == 1 else 45), 207 + i * 32 + (10 if is_drawn else 0)
                 key = (seat, source_index, is_drawn)
-                clickable = self.manual_turn() and tile is not None and active and d['phase'] == 'await_discard' and self.preview is None and not self.game.paused
-                self.card(x, y, tile, 50 if relative == 0 else 34, 70 if relative == 0 else 49, key if clickable else None,
+                clickable = not self.lesson_pending and self.manual_turn() and tile is not None and active and d['phase'] == 'await_discard' and self.preview is None and not self.game.paused
+                self.card(x, y, tile, 50 if relative == 0 else 40 if relative in (1, 3) else 34, 70 if relative == 0 else 29 if relative in (1, 3) else 49, key if clickable else None,
                           selected=self.selection is not None and self.selection[0] == key)
                 if is_drawn:
-                    self.text(x + 17, y + (78 if relative == 0 else 57), "摸入", 8, fill="#ffd779")
+                    self.text(x + (58 if relative in (1, 3) else 17), y + (14 if relative in (1, 3) else 78 if relative == 0 else 57), "摸入", 8, fill="#ffd779")
             river_x, river_y = ((486, 512), (838, 322), (486, 140), (162, 322))[relative]
             self.text(river_x + 92, river_y - 15, "牌河", 10, fill="#9fbbb0")
             latest = next((e for e in reversed(d['events']) if e['type'] == 'discard'), None)
+            rows = max(1, (len(p['discards']) + 5) // 6)
+            river_step = min(45, (150 if relative in (0, 2) else 330) / rows)
+            river_height = min(40, river_step - 5)
             for i, discard in enumerate(p["discards"]):
-                x, y = river_x + i % 6 * 32, river_y + i // 6 * 45
-                self.card(x, y, discard["tile"], 28, 40, selected=discard["is_riichi_declaration"])
+                x, y = river_x + i % 6 * 32, river_y + i // 6 * river_step
+                self.card(x, y, discard["tile"], 28, river_height, selected=discard["is_riichi_declaration"])
                 if discard["is_riichi_declaration"]:
-                    self.text(x + 14, y + 35, "立", 9, fill="#a23c36")
+                    self.text(x + 28, y + river_height, "立", 8, fill="#ffe3a5")
                 if latest and latest['player'] == seat and i == len(p['discards']) - 1:
-                    self.rect(x - 2, y - 2, x + 30, y + 42, outline="#e5c975", width=2)
+                    self.rect(x - 2, y - 2, x + 30, y + river_height + 2, outline="#e5c975", width=2)
                 if discard["claimed_by"] is not None:
                     self.text(x + 14, y + 20, "×", 22, fill="#c52f38")
-                    self.text(x + 14, y + 36, f"→{discard['claimed_by']}", 8, fill="#943b32")
+                    self.text(x + 14, y + river_height - 4, f"→{discard['claimed_by']}", 8, fill="#943b32")
             meld_x, meld_y = ((900, 686), (900, 25), (25, 25), (25, 686))[relative]
             self.text(meld_x, meld_y, "副露：无" if not p["melds"] else "副露", 10, fill="#9fbbb0")
             for j, meld in enumerate(p["melds"]):
@@ -696,6 +762,9 @@ class GameWindow:
             color = "#c52f38" if red else {"m": "#7a3030", "p": "#294f85", "s": "#286640", "z": "#263c35"}[suit]
             if suit == "z":
                 self.text(x + w / 2, y + h / 2, "東南西北白發中"[rank - 1], h * .43, fill=color, tags=tags)
+            elif w > h:
+                self.text(x + w / 2, y + h / 2, str(rank) + {"m": "萬", "p": "筒", "s": "索"}[suit],
+                          h * .43, fill=color, tags=tags)
             else:
                 self.text(x + w / 2, y + h * .32, str(rank), h * .38, fill=color, tags=tags)
                 self.text(x + w / 2, y + h * .76, {"m": "萬", "p": "筒", "s": "索"}[suit], h * .23, fill=color, tags=tags)
@@ -709,7 +778,7 @@ class GameWindow:
             self.canvas.tag_bind(tag, "<Button-1>", lambda event, k=key, t=tile: self.select_tile(k, t))
 
     def select_tile(self, key, tile):
-        if (not self.manual_turn() or self.preview is not None or self.game.paused or self.data['phase'] != 'await_discard' or key[0] != self.data["actor"]
+        if (self.lesson_pending or not self.manual_turn() or self.preview is not None or self.game.paused or self.data['phase'] != 'await_discard' or key[0] != self.data["actor"]
                 or (not self.omni and self.seat != key[0])):
             return
         self.selection = (key, tile)
@@ -718,11 +787,13 @@ class GameWindow:
         self.draw_table()
 
     def submit(self):
-        if self.selection is None or not self.manual_turn():
+        if self.lesson_pending or self.preview is not None or self.game.paused or self.selection is None or not self.manual_turn():
             return
         key, tile = self.selection
         try:
-            self.game.submit(Discard(key[0], Tile(**tile), key[2]), mode=self.submission_mode())
+            action = Discard(key[0], Tile(**tile), key[2])
+            self.game.submit(action, mode=self.submission_mode())
+            self.begin_lesson(action)
             self.dirty = True
             self.refresh()
             self.announce_review()
@@ -738,8 +809,8 @@ class GameWindow:
 
     def submit_special(self):
         name = self.special.get()
-        if not self.manual_turn() or self.preview is not None or self.game.paused:
-            self.notice.set("机器人回合、回放或暂停中不能执行人工动作。")
+        if self.lesson_pending or not self.manual_turn() or self.preview is not None or self.game.paused:
+            self.notice.set("讲解停顿、机器人回合、回放或暂停中不能执行人工动作。")
             return
         if name not in self.action_builders and name not in self.decision_options:
             self.notice.set("当前没有可执行的所选动作。")
@@ -751,6 +822,7 @@ class GameWindow:
             action = self.action_builders[name](self) if name in self.action_builders else self.decision_options[name]
             if action is not None:
                 self.game.submit(action, mode=self.submission_mode())
+                self.begin_lesson(action)
                 self.dirty = True
                 self.refresh()
                 self.announce_review()
@@ -823,6 +895,7 @@ class GameWindow:
             if self.preview is not None:
                 raise ValueError("请先返回当前牌局。")
             self.game.undo()
+            self.lesson_pending = None
             if self.bots_enabled.get():
                 self.game.stop()
             self.dirty = True
@@ -842,6 +915,7 @@ class GameWindow:
         count = int(self.history.get())
         if count < self.game.action_count and messagebox.askyesno("回退", f"删除第 {count} 次动作后的操作？", parent=self.root):
             self.game.rewind(count)
+            self.lesson_pending = None
             if self.bots_enabled.get():
                 self.game.stop()
             self.preview, self.dirty = None, True
@@ -872,20 +946,29 @@ class GameWindow:
     def advance_bot(self):
         # Tcl-owned combobox popdowns have no Python widget wrapper. Only ask
         # whether a grab exists, without grab_current() resolving that wrapper.
-        if (not self.bots_enabled.get() or self.preview is not None or self.game.paused or self.testing
+        if (self.lesson_pending or self.preview is not None or self.game.paused or self.testing
                 or self.root.tk.call("grab", "current", self.root._w)):
             return
         view = self.game.observe(self.human_seat)
         actor = view["actor"]
-        if view["result"] or actor == self.human_seat:
+        if view["result"]:
             return
         try:
-            yaku = self.bot_strategy.get() == "役种感知"
-            chooser = choose_yaku_action if yaku else choose_action
+            legal = self.game.legal_actions(actor)
+            manual = not self.bots_enabled.get() or actor == self.human_seat
+            if manual and self.auto_pass.get() and view["phase"] == "await_response" and len(legal) == 1 and legal[0] == Decision(actor, "pass"):
+                self.game.submit(legal[0], policy="ui-auto-pass-v1", mode=self.submission_mode())
+                self.dirty = True
+                self.refresh()
+                return
+            if manual:
+                return
+            yaku = self.bot_strategy.get() != "基础牌效"
+            chooser = choose_riichi_action if self.bot_strategy.get() == "基础立直" else choose_yaku_action if yaku else choose_action
             mode = "fold" if self.bot_mode.get() == "弃和" else "attack"
-            args = (self.game.observe(actor), self.game.legal_actions(actor))
+            args = (self.game.observe(actor), legal)
             action = chooser(*args, mode=mode) if yaku else chooser(*args)
-            self.game.submit(action, policy=STRATEGY_VERSION if yaku else "basic-efficiency-v1", mode=mode if yaku else None)
+            self.game.submit(action, policy=RIICHI_VERSION if self.bot_strategy.get() == "基础立直" else STRATEGY_VERSION if yaku else "basic-efficiency-v1", mode=mode if yaku else None)
             self.dirty = True
             self.refresh()
             if self.data["result"] and self.tabs.select() == str(self.training_frame):
@@ -903,6 +986,8 @@ class GameWindow:
             self.put(self.test_text, self.queue.get_nowait())
             self.testing = False
             self.test_button.configure(state="normal")
+            if self.lesson_pending:
+                self.lesson_button.configure(state="disabled" if self.game.paused or self.preview is not None else "normal")
         except Empty:
             pass
         if monotonic() >= self.next_bot_time:
