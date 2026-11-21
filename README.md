@@ -1,174 +1,106 @@
 # Nanikiru
 
-Python 四人日麻何切训练软件项目。目标是随机开局、与三家机器人对局，并由模型在出牌后提供逐切评分和整局训练评分；其中基础牌效分析与逐切复盘已实现，已接入基础牌效机器人，训练模型尚未实现，见 [产品目标](docs/training-product.md)。摄像头识别与推荐改为后续共享评估接口的应用。
+项目交接与论文回顾入口：[研发记录、失败与实验索引](docs/research-log.md)。包含当前目标、历史决策、结果指针和下一步；各旧阶段说明以此处链接的实际版本／报告核查为准。
 
-已实现真实牌山的单局环境、图形牌桌，以及独立的外部牌局记录库。Python 3.11+；新游戏使用 `mahjong==2.0.0` 计算牌型、役与番符，由本地代码处理规则推进和支付。本机验证版本为 Python 3.11.4。
+Git 日常同步及本地数据边界见 [Git 同步说明](docs/git-sync.md)。
 
-支持随机开局/指定种子、四家人工操作、三家依次响应、吃碰杠、立直、自摸/荣和、振听、荒牌及途中流局、单局结算。四位玩家视角与全知调试独立。具体规则基准和验证范围见 [规则与结算](docs/rules-and-settlement.md)。
+路线特征、可重复牌谱评测与固定 v2 权重拟合已实现，使用方法和当前边界见[训练说明](docs/v2-training.md)。
 
-现已加入可切换的基础牌效／役种感知／基础立直机器人，默认庄家人工、三家基础立直策略；尚无训练模型、综合评分或连续多局调度。结算结果保存后续场风、局数、庄家、本场与供托信息。
+Python 四人日麻画面辅助项目。最终方向是“获取画面 → 识别与处理对局 → 分析 → 给出何切建议”，支持固定计算和神经网络等分析方法。
 
-场风支持东南西北；赤宝、新杠宝开关在开局固定并随存档保存。关闭赤宝保留赤五身份，只取消赤宝加番。
+**当前阶段（2026-11-21 核查）：可见信息分析、A 规模拟与批量对战评测。** 已有 v1／启发式 v2、天凤 XML 与 MJAI 适配、完整／缺失观察数据、独立测试界面和机器人牌桌；arena 支持完整半庄评测并已接入 akochan。旧 v2 已进行弃牌／立直拟合试验，不能视为全动作顺位优化。新增最终收益导出、离线条件后继分支和共享顺位价值模型；共享模型仍未训练，等待用户确认设置。视觉识别、可见信息下的完整分支概率与在线全动作顺位规划尚未实现。各阶段能力与验证以研发记录为准。
 
-非法请求保留最后合法局面和已有合法响应，显示原因并暂停；修正输入或撤销后须点击“暂停 / 恢复”，再提交正确动作。不强制放行、不自动罚分。
+## 文档
 
-## 训练界面
+- [批量半庄评测与外部基准](docs/batch-evaluation.md)
+- [共享顺位模型：设置、参数与未训练边界](docs/shared-rank-value.md)
+- [候选与条件后继分支](docs/successor-branches.md)
 
-默认显示牌桌与最近一次人工弃牌反馈；“展开复盘”查看对应候选分析。顶部“设置”集中视角、理牌、规则、机器人和评估模式；“开发 / 调试”集中日志、JSON 与测试，默认隐藏。“回放工具”展开历史操作。结算默认显示摘要和点数表，完整明细可展开。入口对照及界面验证见 [训练界面说明](docs/ui-training.md)。
+- [完整/不完整观察器：输入契约、批量分片与实验](docs/observation.md)
 
-牌桌“候选比较”可并排查看实际弃牌与其他合法候选；等待、振听和条件支付分别展示，不新增综合推荐。“设置 → 机器人 → 人工弃牌后等待继续”默认关闭，开启后在人工弃牌成功后停下讲解，点击“继续对局”再推进；不会绕过核心暂停。详见 [候选比较与讲解](docs/tenpai-comparison.md)。
+- [人工参数 v2：评分、权重、未知与使用](docs/fixed-v2.md)
+- [天凤牌谱适配：导入、样本与数据隔离](docs/tenhou-adapter.md)
 
-## 开发者预览版
+- [连续单局模拟器：规则、接口、记录与结算](docs/simulator.md)
+- [新对局 UI：操作与调试](simulator_ui/README.md)
+- [设计入口](docs/design.md)
+- [项目架构与后续开发归属](docs/architecture.md)
+- [五结构初步方案及最新落地状态](docs/observation-data-design.md)
+- [处理/分析输入输出接口与场景表](docs/analysis-interface.md)
+- [分析模块接口清单：参数、结果及实现状态](docs/analysis-api-list.md)
+- [分析调度与统一输出：接口、使用和边界](docs/analysis-pipeline.md)
+- [分析模块说明：当前功能、未知降级与运行示例](docs/analysis-module.md)
+- [单局面测试 UI：启动、随机/手动组牌与图形素材](test_ui/README.md)
+- [人工事件推进：事件、记录、版本及边界](docs/manual-progression.md)
+- [独立事件录入工具：操作说明](event_ui/README.md)
+- [本轮删除、保留、兼容性与验证边界](docs/direction-adaptation.md)
+- [固定方法与神经网络方向](docs/training-product.md)
+- [历史规则基准](docs/rules-and-settlement.md)、[第三方依赖](docs/third-party.md)
 
-新增“推进／立直”入口：按历史切牌浏览一向听有效摸牌及后续听牌分支；自己待弃牌时比较同一张牌的立直／默听条件。新机器人只在保守基准允许时立直，基础牌效排序和统计不变。设置中“仅有过时自动响应”默认开启，“人工弃牌后等待继续”默认关闭。四家手牌为单行，侧家为竖向单列。接口、策略、v7 兼容与验证见 [开发者预览版说明](docs/developer-preview.md)。
+## 当前代码
 
-## 运行
+| 文件 | 职责 |
+| --- | --- |
+| nanikiru/simulation/ | 连续单局推进、结算、全知存档及玩家观察投影 |
+| nanikiru/rules/config.py、discards.py | 共用规则设置及弃牌约束 |
+| simulator_ui/ | 新独立牌桌 UI、四家人工操作、回放与分析 |
+| nanikiru/models.py | TileRecord、PlayerInfo、RoundSnapshot、Event、RoundRecord；UNKNOWN 与结构检查 |
+| nanikiru/contracts.py | AnalysisRequest/Result、Action、CandidateResult、Metric；包含分析方法选择 |
+| nanikiru/analysis/basic.py | 向听、等待、指定弃牌牌效与条件打点的指标接口；从 analysis 包导出 |
+| nanikiru/analysis/fixed_policy.py | 人工参数 v2；条件打点、后续牌效质量、风险与攻防排序 |
+| nanikiru/observation/ | 完整/缺失观察、批量数据分片及 v1/v2 对照审计 |
+| nanikiru/adapters/ | 天凤本地 XML/gzip 转四家可见记录及分离标签样本 |
+| nanikiru/analysis/minimal_policy.py | 最小向听优先、最大未见进张次之的并列排序；不授予行动许可 |
+| nanikiru/processing/analysis_input.py | 人工记录前缀提取与标准请求构造 |
+| nanikiru/analysis/dispatcher.py、output.py | 同步方法调度、统一结果格式化和调试 JSON |
+| test_ui/ | 新单局面图形测试工具；与分析核心分离 |
+| nanikiru/processing/ | 确认可见事件、阶段与库存变化、保存加载/回放/撤销 |
+| event_ui/ | 独立人工事件录入窗口，原 test_ui 保持不变 |
+| nanikiru/tiles.py | 牌码及 34 索引、赤牌物理库存 |
+| nanikiru/analysis/efficiency.py | 观察库存、向听/进张、指定弃牌的牌形计算 |
+| nanikiru/rules/scoring.py | 条件番符、等待、振听条件组合；不判断实际和牌许可或最终结算 |
+| nanikiru/rules/call_rules.py | 吃碰后的食替集合 |
 
-本项目已配置 `.venv`，PyCharm 可选择 `D:\Nanikiru\.venv\Scripts\python.exe`。新环境安装和启动：
+牌码 `0m/0p/0s` 保留赤牌身份，无独立 red 字段。当前规则标识 `riichi-4p-v1` 采用每门一赤三普通五的库存；关闭赤宝计分不改变实体库存。
+
+未知用 `UNKNOWN`，没有/不适用用 `None`；集合完整性另行标记。资格由后续计算推导，不在 PlayerInfo 重复保存。处理器支持有限事件的回放与新格式加载，结构与阶段检查不是完整合法性验证器。
+
+已按职责整理 `analysis/`、`rules/`、`processing/`，逻辑模块不对应单个文件。处理只维护事实，分析只读事实；UI 不自行推进核心状态。
+
+## 运行与验证
+
+Python 3.11+，依赖固定为 `mahjong==2.0.0`。本机使用 `.venv\Scripts\python.exe`，从项目目录调用无需安装项目本体。
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python -m pip install mahjong==2.0.0
-.\.venv\Scripts\python run_game.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m examples.inspect_position
+.\.venv\Scripts\python.exe -m examples.analyze_basics
+.\.venv\Scripts\python.exe -m test_ui
+.\.venv\Scripts\python.exe -m event_ui
+.\.venv\Scripts\python.exe -m simulator_ui
+.\.venv\Scripts\python.exe -m examples.simulate_round
 ```
 
-使用其他解释器时，应先用那个解释器执行 `-m pip install mahjong==2.0.0` 安装依赖；从项目目录运行无需安装项目本体。测试命令：`.\.venv\Scripts\python -m unittest discover -s tests -v`。
+2026-11-12：**121 项单元测试通过**（观察器阶段新增 12 项，此前 109 项），Python 3.11.4、mahjong 2.0.0。v2 为可解释启发式，尚无强度或概率校准结论；天凤适配另做了 4 份公开样例、30 局的重建检查。
 
-### 新图形牌桌（推荐入口）
+模拟器、事件分析面板、人工推进和原单局面 UI 的交互检查通过；已实际查看 v2 紧凑布局并验证摘要可滚动查看。原 `test_ui/` 七个文件的 SHA-256 均与本轮开始一致。
 
-直接运行项目根目录 `run_game.py`，或执行 `python run_game.py`。也支持直接运行 `nanikiru/game_ui.py` 或 `python -m nanikiru.game_ui`。
+旧 `run_game.py`、`run_debug.py` 和旧 Tk 界面已删除。单局面入口为 `python -m test_ui` / `run_position_ui.py`，事件入口为 `python -m event_ui` / `run_event_ui.py`。旧 API/存档不兼容；[旧 JSON 样例](examples/README.md)原样保留，没有自动迁移。新模拟器已实现吃碰杠/立直、和牌及流局结算；人工事件工具仍只支持其原有有限事件。分析侧共享弃牌约束，吃碰杠/立直策略评价与概率模型待后续开发。
+# 2026-11-13 开发增量
 
-1. 启动时随机开局；点“随机新局”重新洗牌，或“按种子开局”输入整数复现。庄家默认为玩家 0。“设置”内的场风/赤宝/杠宝选项仅影响新局。
-2. 点手牌，再点“确认弃牌”。之后其他三家逐一从菜单选择响应或“过”，点击“执行所选动作”；全部收集后才裁决和摸牌。默认由机器人操作另外三家；轮到庄家响应时，有特殊动作则由你选择；仅有“过”时默认自动提交，可在设置关闭。关闭“三家机器人”后可逐家人工调试。
-3. 默认主视角与人工座位为本局实际庄家（亲家），机器人行动不自动切换视角。“返回庄家视角”可回到主视角；切换观察视角不会改变人工座位。四位玩家视角仅公开对应暗手，其他牌显示背面。切换为“全知调试”时顶部有明确提示，数据页额外显示未公开牌山和保留牌。
-4. 机器人模式下加载、撤销和回退重录后先暂停，须显式恢复；只读回放期间不运行机器人。支持暂停、撤销动作、按动作次数回放与回退重录。次数包含响应和过；自动产生的摸牌随触发它的动作一起撤销。视角切换和只读回放不改变当前牌局。
-5. “保存游戏（全知）”保存完整调试存档，包含隐藏信息；其格式与旧记录 JSON 不同，各自用对应窗口加载。
-6. 动作菜单按当前座位显示合法选项；吃碰组合包含实际赤牌选择，立直项包含弃牌及摸切/手切。规则仍在核心校验。当前视角的事件、响应和 JSON 经过信息过滤。
-7. 结束后进入“单局结算”，显示番符、役、付款明细、点数变化和连庄信息；可加载 `examples/settled-game.json` 查看人工构造的天和案例，或 `examples/exhaustive-game.json` 查看完整 280 动作荒牌对局。两者均可回放。
+v2 已支持未听牌进攻路线与弃牌、立直、吃碰杠、和牌及跳过的动作比较；在现有模拟器／事件工具中选择 `fixed-v2` 查看。见[实现与边界](docs/action-v2.md)。原单局面 UI 未修改。
 
-8. 弃牌后底部显示基础牌效反馈；打开“逐切复盘”查看向听、有效进张、未见枚数和并列最优，黄色行是实际选择。可逐切浏览并查看按玩家汇总；撤销和回放同步更新记录。结果只评价基础牌效，不代表综合最优。算法、统计分母与接口详见 [基础牌效与复盘](docs/efficiency-review.md)。
 
-9. “听牌质量”页按候选弃牌展示理论等待、赤/普通牌未见枚数、荣和/自摸的有役条件、振听限制和条件番符基础支付。它不改变机器人排序；点数不含本场、供托和责任支付。当前存档为 v7（兼容 v2–v6），旧记录缺少信息时标为受限，详见 [听牌分析](docs/tenpai-analysis.md)。
+MJAI（JSONL/gzip/zstd/tar）牌谱导入及训练入口见 [MJAI 适配器](docs/mjai-adapter.md)。
 
-“设置 → 视角与牌面”中的“自动理牌”默认开启：可见手牌按万、筒、索、字排序，同类按牌值升序，赤五排在普通五前；摸入牌始终单独展示。取消勾选恢复原始顺序。理牌只影响显示，不修改牌局、存档或动作历史。
+2026-11-13 MJAI 适配验证：全套 144 项测试通过；实际 10 场 / 110 局导出 120 条样本并完成训练特征缓存接入。本次未改变 UI，未重新进行桌面检查。
 
-界面使用 Canvas 绘制独立牌面、牌背和四家牌河；不依赖外部图片或第三方界面库。截图检查记录在 `docs/ui-checks/`。
+天凤四人半庄训练目标、规则差异及导入检查见 [规则核查](docs/tenhou-rules.md)。模拟器可选新预设；正式训练须重导旧样本、重建缓存。
 
-### 三家基础牌效机器人
+第一轮真实牌谱调参的划分、进度与结果路径见 [实验说明](docs/v2-round1.md)。
 
-默认开启“三家机器人”和“基础立直”策略，设置内可切回“役种感知”或“基础牌效”。基础策略保持原行为：最优牌效弃牌、合法和牌，其余过。役种感知策略同向听优先保留有役条件，满足严格降向听且保留明确有役条件时允许吃碰；不主动杠或立直。三种策略都只用自己的可见信息，仍通过核心合法动作入口提交。详见 [役种决策基准](docs/yaku-decisions.md)。
+训练进度窗口：python -m training_ui（或 run_training_ui.py），显示真实分片进度、错误、参数搜索与损失曲线。见 [说明](docs/training-monitor.md)。
 
-“役种决策复盘”独立展示实际动作、策略版本、候选比较、有役状态、宝牌线索及门清损失；“逐切复盘”的基础牌效统计含义不变，不表示综合正确率。响应记录是提交的意向，是否鸣牌成功由最终裁决决定。
+2026-11-14：独立[机器人四方牌桌](docs/robot-table.md)已实现，运行 `python -m table_ui` 或 `run_table_ui.py`。各家可选择人工、v1、默认 v2 或本轮拟合 v2；支持单步／自动推进、旁侧主视角分析、保存／撤销和单局结算。全套 176 项测试通过。
 
-`nanikiru.bot.choose_action(observation, legal_actions)` 只接收对应玩家可见信息与合法动作，不接收 Game、种子或牌山。机器人开关属于窗口运行设置，不写入牌局存档；存档仍以实际动作精确回放。基础牌效机器人是确定性基准，不是训练模型；新策略的条件打点与防守边界分别见对应文档。
-
-### 进攻与弃和
-
-顶部独立设置“人工复盘模式”和“三家役种机器人模式”，默认进攻。人工模式不代替出牌；机器人弃和时按针对立直家的现物依据排序，允许增加向听，不主动鸣牌，仍接受合法和牌。切换模式只影响后续动作。基础牌效机器人不应用攻守模式，选择它时模式控件禁用。
-
-“役种决策复盘”分别展示模式建议、逐家安全依据和原进攻分析。未知不代表安全，对某家现物不代表全桌安全；基础牌效损失不等于综合决策错误。完整顺序与边界见 [防守说明](docs/defense.md)。
-
-### 游戏核心调用
-
-```python
-from nanikiru import Game, Decision, Discard, Tile
-
-game = Game(seed=42, dealer=0)
-view = game.observe(0)  # 此结果可作为玩家输入；不要把 game 本体交给策略
-tile = Tile(**view["players"][0]["hand"]["drawn_tile"]["tile"])
-game.submit(Discard(0, tile, True))  # 摸切，进入响应窗口
-for seat in (1, 2, 3):
-    game.submit(Decision(seat, "pass"))  # 人工明确过；最后一人确认后才摸牌
-# game.legal_actions(seat) 返回该座位当前可用动作，不能把别家的列表交给玩家。
-game.save("game.json")  # 全知调试存档
-restored = Game.load("game.json")
-```
-
-`Game.debug_state()` / `debug_view()` 是全知调试接口；`observe(seat)` 返回独立的可见数据，不包含种子、其他暗手和未公开牌山。Python 本地接口分离不等于安全沙箱，未来策略只应接收观察数据与提交动作的受控入口。
-
-洗牌使用局部 `random.Random(seed)`，随机新局先生成种子。从庄家开始逐家发一张，共 13 轮；最后 14 张初始保留，索引 130 为初始宝牌指示牌，52～121 依序供摸牌。庄家首摸后余牌 69。岭上牌为 135～132，每次杠令活牌山末端缩短一张；宝牌索引 130、128、126、124、122，里宝为对应索引加一。此约定不是雀魂内部协议的复刻。
-
-新游戏存档版本为 **v5**，增加独立攻守模式及防守分析记录；兼容加载 v2/v3/v4，旧模式不补猜；v2/v3 补建役种分析，旧操作来源标为 unknown-legacy；核对存档记录与回放一致性。v1 简化游戏存档会明确拒绝，避免套用响应规则后静默改变结果；旧 Recorder v1 仍使用旧窗口读取。
-
-### 旧记录器的文字调试窗口
-
-在 PyCharm 中直接运行根目录 `run_debug.py`，或在项目根目录运行 `python run_debug.py`。使用 Python 自带的 Tkinter，不需要安装第三方界面库。
-
-也支持直接运行 `nanikiru/debug_ui.py`，或从项目根目录执行 `python -m nanikiru.debug_ui`；直接运行包内文件时，入口会补齐项目导入路径，无需修改 IDE 的 PYTHONPATH。
-
-- 默认加载人工中途示例。可加载已有记录 JSON、另存、重置示例。
-- 展示四家手牌数量、摸入牌、牌河、副露、点数、立直、剩余牌数，以及完整状态 JSON。
-- 选择玩家、摸牌/弃牌、牌码和摸切类型，提交后通过记录库校验。对手摸牌留空，自家摸牌必须填写；下一动作和已知摸入牌会自动填入。
-- 历史选择框支持只读查看、返回当前、回退重录；暂停和撤销保留原有语义。
-- “运行自动化测试”在独立进程运行 `tests` 目录的 unittest 测试，结果显示在输出页，窗口保持响应。
-- 特殊动作菜单目前明确提示尚未实现。后续通过 `DebugWindow.register_action(name, builder)` 接入：构造器接收玩家、牌码、摸切标记，可自行弹出额外参数窗口，返回核心动作对象（取消返回 None）；核心仍必须实现对应动作校验。不要在界面直接修改状态。
-- 窗口仅用于调试，没有任意快照表单编辑器；新局面目前通过脚本准备记录 JSON 后加载，或由脚本构造 `DebugWindow(root, recorder)`。
-
-### 脚本示例和测试
-
-在项目根目录执行：
-
-```shell
-python -m examples.record_round
-python -m unittest discover -s tests -v
-```
-
-示例从自家摸牌后的中途局面开始，剩余 5 次可摸牌，先弃牌、停止并保存，再加载继续，直至牌山耗尽。生成 `examples/paused_round.json` 和 `examples/completed_round.json`；再次运行会覆盖这两个示例输出。
-
-输出目录按脚本文件位置确定，不依赖工作目录。在 PyCharm 中直接运行脚本时，需启用将项目内容根目录加入 PYTHONPATH，以便导入 `nanikiru`；终端推荐使用上面的模块运行命令。
-
-这是人工构造的记录测试数据，不是真实雀魂牌谱，也不用于证明和牌或立直合法。
-
-## 最小调用
-
-```python
-from nanikiru import Recorder, Draw, Discard, Tile
-from examples.record_round import sample_snapshot
-
-snapshot, _ = sample_snapshot()
-record = Recorder(snapshot)
-record.submit(Discard(player=0, tile=Tile.parse("5z"), is_tsumogiri=True))
-record.submit(Draw(player=1))  # 对手摸牌，牌面未知；表示上一弃牌无人响应
-
-print(record.state.remaining_draws)
-record.stop()                 # 暂停录入，不判定流局
-record.save("my_round.json")
-record = Recorder.load("my_round.json")
-record.resume()
-
-before_draw = record.replay(1) # 查看第 1 个动作之后，不改变记录
-record.undo()                 # 撤销最近动作
-record.rewind(0)              # 回到初始快照，并删除后续事件
-```
-
-文件不存在、目录不可写等文件系统错误直接抛出 `OSError` 的对应子类；内容或动作错误抛出 `RecordError`（非法 `Tile` 构造抛出 `ValueError`）。动作错误标明事件位置。未支持的动作也明确报错。
-
-## 输入约定
-
-- 座位 0～3 沿摸打顺序递增，与屏幕方向无关；`observer_seat` 指定自家。`dealer_seat` 用于推导自风。
-- `m/p/s/z` 分别为万、筒、索、字；`1z..7z` 为东、南、西、北、白、发、中。`0m/0p/0s` 为赤五。默认每门一张赤五，普通五每门三张。
-- `HandState.known_tiles` 和 `unknown_count` 均不含单独的摸入牌。`drawn_tile=None` 表示未摸牌；`DrawnTile(None)` 表示摸到未知牌。
-- 必须从自家已摸牌、待弃牌的完整稳定快照接入：自己牌面全知，其他玩家仅记录未知暗手数量。
-- 每家牌河按自身弃牌顺序给出，弃牌 `id` 在整份快照中唯一。接入前的全局次序与摸切可以未知。
-- 已鸣走的弃牌仍在河中，设置 `claimed_by`；副露通过 `source_discard_id` 引用它。暗杠无来源弃牌。接入后无需知道接入前的事件编号。
-- 初始副露可以是吃、碰、明杠、暗杠或加杠，牌面必须完整。所有杠补牌和翻宝必须已完成，宝牌指示牌数为 `1 + 杠数`。
-- 初始立直用 `riichi=True` 表示已成立，不接受宣言待成立的中间状态；不验证是否听牌。已有立直禁止明确手切，但不会把对手未知摸切标记改成已知。
-- 自家弃牌必须明确指定摸切或手切；即使摸入牌与原有牌相同，也不替调用者猜测。
-
-## 旧 Recorder 的支持与限制
-
-支持普通摸打、初始快照校验、已知牌库存检查、剩余牌数推导、停止恢复、JSON 保存加载、回放与回退重录。`state` 返回副本，外部修改不会绕过动作入口污染内部记录。
-
-剩余可摸数为 `136 - 14 - 暗手总张数 - 副露实际张数 - 未被鸣走的弃牌数`，适用于本版要求的完整稳定快照。未知暗手也按张数计入；杠计四张，指示牌不额外扣除。最后摸牌后仍可弃牌，之后状态为 `wall_exhausted`。停止录入仅改变暂停标记；保存加载保留暂停状态，回放只还原牌局动作，撤销也不自动解除暂停。
-
-新增吃碰杠、立直、和牌、流局、算分、听牌与振听校验均未实现。自家摸打之外的特殊动作应停止交给下一版本处理，不能静默跳过。当前也不验证初始历史是否曾发生过合法鸣牌机会、立直时刻或牌型条件，不自动管理整场东风战。
-
-JSON 格式版本为 1，保存初始快照、连续编号的动作和暂停标记；加载重新执行校验与回放，不信任额外的缓存状态。保存采用同目录临时文件写完后替换目标文件。没有自动保存功能。
-
-## 文件入口
-
-- `nanikiru/models.py`：数据类型和剩余牌数计算。
-- `nanikiru/recorder.py`：校验、动作更新与保存回放。
-- `examples/record_round.py`：可运行人工牌例。
-- `tests/test_recorder.py`：核心行为和错误路径验证。
-- `docs/design.md`、`docs/phase-1.md`：设计约定与阶段进度。
+2026-11-15：新增 [A 规批量半庄评测器](docs/batch-evaluation.md)，支持多机器人配置、akochan 本地接入、四座位轮换、失败现场、断点续跑与配对版本比较。入口 `python -m nanikiru.arena examples/evaluation-akochan.json --output data/evaluations/my-run`。本阶段不修改分析器参数。

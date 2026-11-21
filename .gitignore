@@ -10,3 +10,15 @@ dist/
 .env
 .env.*
 !.env.example
+# Local datasets, feature databases, fitted weights, evaluations and bot builds.
+# Keep reproducible examples in examples/, fixtures in tests/fixtures/, and
+# reviewed experiment summaries in docs/ instead of committing generated data.
+/data/
+
+# Reproducible observation samples; retain the human-readable report.
+/docs/observation-checks/source.jsonl
+/docs/observation-checks/observations/
+
+# Default interactive save files (not the versioned examples).
+/simulation.json
+/manual_round.json

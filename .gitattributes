@@ -1,0 +1,4 @@
+# Consistent source/document line endings on Windows and other platforms.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf

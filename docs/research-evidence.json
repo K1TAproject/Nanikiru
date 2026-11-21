@@ -1,0 +1,753 @@
+{
+  "snapshot_date": "2026-11-16",
+  "scope": "Historical artifact summaries and hashes; not raw data or a full reproducibility archive",
+  "entries": [
+    {
+      "path": "data/external-replays/v2-round1-20261113/status.json",
+      "bytes": 199,
+      "sha256": "ce546d0be02114b21f921e1977d54240e4ad0573e625cca08806c0cb10d557e5",
+      "summary": {
+        "stage": "failed",
+        "completed_chunks": 11,
+        "error": "tenhou-houou-2026/2026011923gm-00a9-0000-276cd81d.mjai.json.zst: MJAI line 410: Scores inconsistent between rounds",
+        "pid": 18000
+      }
+    },
+    {
+      "path": "data/external-replays/adapter-audit-20261114.json",
+      "bytes": 28412,
+      "sha256": "4f8554d925631b39148e763f99b81c7eed89e1ac833b323a8a080d3760dfc95f",
+      "summary": {
+        "status": "complete",
+        "counts": {
+          "games": 1000,
+          "hands": 10640,
+          "decisions": 510035,
+          "sample_checks": 21187,
+          "passed_games": 1000
+        },
+        "failures": [],
+        "elapsed_seconds": 2227.9
+      }
+    },
+    {
+      "path": "data/external-replays/v2-round1-A-retry-01/fit/report.json",
+      "bytes": 17200,
+      "sha256": "49426598c00a0d5df0fd36c539f7a4d16ccf5870cce424ff974ec3055126fd90",
+      "summary": {
+        "scope": "discard_riichi_imitation",
+        "not_strength_evidence": true,
+        "rounds": 2,
+        "tune": [
+          "route",
+          "route_speed",
+          "route_ukeire",
+          "value",
+          "risk"
+        ],
+        "weights": {
+          "shanten": 4.0,
+          "ukeire": 2.0,
+          "lookahead": 3.0,
+          "value": 0.0,
+          "bonus": 0.25,
+          "risk": 3.5,
+          "reserve": 0.3,
+          "late_defense": 0.8,
+          "route": 8.0,
+          "route_speed": 0.5,
+          "route_ukeire": 2.0,
+          "commitment": 0.5
+        },
+        "dataset": {
+          "schema_version": "v2-ranking-features-1",
+          "status": "complete",
+          "code_sha256": "626ca0cb1d0eeb483d29003b376569bea49b818707f084a26b4b1a25346cd4ff",
+          "rules_profile": "tenhou-4p-hanchan-2026-v1",
+          "rows": {
+            "test": 2400,
+            "train": 24060,
+            "validation": 3540
+          },
+          "source_counts": {
+            "test": 80,
+            "train": 802,
+            "validation": 118
+          },
+          "database_sha256": "b48f1b882930340a8e6b1053ae982a573efab3ad8a644fe74c948472cb107b30"
+        },
+        "metrics": {
+          "baseline": {
+            "train": {
+              "total": 24060,
+              "evaluated": 22757,
+              "conditional": 0,
+              "forced": 1300,
+              "skips": {
+                "possible_win_outside_scope": 3
+              },
+              "loss": 1.4972201627921986,
+              "top1": 0.5145230039108846,
+              "tie_adjusted_top1": 0.4651403963615597,
+              "reciprocal_rank": 0.6962332109649737,
+              "v1_top1": 0.6936297486719343,
+              "v1_count": 22401
+            },
+            "validation": {
+              "total": 3540,
+              "evaluated": 3335,
+              "conditional": 0,
+              "forced": 205,
+              "skips": {},
+              "loss": 1.4676181061105242,
+              "top1": 0.5238380809595202,
+              "tie_adjusted_top1": 0.4726836581709143,
+              "reciprocal_rank": 0.7027092730690926,
+              "v1_top1": 0.7042339323789217,
+              "v1_count": 3283
+            },
+            "test": {
+              "total": 2400,
+              "evaluated": 2271,
+              "conditional": 0,
+              "forced": 129,
+              "skips": {},
+              "loss": 1.5232077244610558,
+              "top1": 0.5068251871422281,
+              "tie_adjusted_top1": 0.4561500073389114,
+              "reciprocal_rank": 0.6916860941299503,
+              "v1_top1": 0.6868823000898473,
+              "v1_count": 2226
+            }
+          },
+          "fitted": {
+            "train": {
+              "total": 24060,
+              "evaluated": 22757,
+              "conditional": 0,
+              "forced": 1300,
+              "skips": {
+                "possible_win_outside_scope": 3
+              },
+              "loss": 1.423393909055252,
+              "top1": 0.5412400580041306,
+              "tie_adjusted_top1": 0.48979361661613435,
+              "reciprocal_rank": 0.7151497882284309,
+              "v1_top1": 0.6936297486719343,
+              "v1_count": 22401
+            },
+            "validation": {
+              "total": 3540,
+              "evaluated": 3335,
+              "conditional": 0,
+              "forced": 205,
+              "skips": {},
+              "loss": 1.4044445137426496,
+              "top1": 0.5559220389805097,
+              "tie_adjusted_top1": 0.5027686156921535,
+              "reciprocal_rank": 0.7241123735501551,
+              "v1_top1": 0.7042339323789217,
+              "v1_count": 3283
+            },
+            "test": {
+              "total": 2400,
+              "evaluated": 2271,
+              "conditional": 0,
+              "forced": 129,
+              "skips": {},
+              "loss": 1.4439947738784846,
+              "top1": 0.5209158960810216,
+              "tie_adjusted_top1": 0.46877293409658044,
+              "reciprocal_rank": 0.7045403395469433,
+              "v1_top1": 0.6868823000898473,
+              "v1_count": 2226
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "data/evaluations/akochan-pilot-02/status.json",
+      "bytes": 239,
+      "sha256": "d14ffebfa73483653acad6c81967cf36ee7f9d4da327bb59203e067f2a2517cf",
+      "summary": {
+        "stage": "failed",
+        "completed_matches": 1,
+        "total_matches": 4,
+        "error": "ValueError: External bot EOF or oversized response",
+        "seed": 18,
+        "rotation": 1,
+        "hand": 9,
+        "action": 9,
+        "seat": 3,
+        "bot": "akochan"
+      }
+    },
+    {
+      "path": "data/evaluations/akochan-failure-recheck-01/result.json",
+      "bytes": 1611,
+      "sha256": "ff2681872a7908247c4b094f6621a89d126b38d20b0d8157fd2d95b69ebb47ef",
+      "summary": {
+        "status": "complete",
+        "continued_actions": 78,
+        "result": {
+          "kind": "exhaustive",
+          "winners": [],
+          "payments": [
+            {
+              "payer": 0,
+              "winner": 1,
+              "amount": 750,
+              "reason": "noten"
+            },
+            {
+              "payer": 0,
+              "winner": 2,
+              "amount": 750,
+              "reason": "noten"
+            },
+            {
+              "payer": 3,
+              "winner": 1,
+              "amount": 750,
+              "reason": "noten"
+            },
+            {
+              "payer": 3,
+              "winner": 2,
+              "amount": 750,
+              "reason": "noten"
+            }
+          ],
+          "details": {
+            "tenpai": [
+              1,
+              2
+            ],
+            "nagashi": []
+          },
+          "initial_scores": [
+            25300,
+            15400,
+            21900,
+            37400
+          ],
+          "scores": [
+            23800,
+            16900,
+            23400,
+            35900
+          ],
+          "score_delta": [
+            -1500,
+            1500,
+            1500,
+            -1500
+          ],
+          "riichi_sticks": 0,
+          "dealer_repeats": false,
+          "bankruptcy": false,
+          "next_round": {
+            "dealer": 0,
+            "round_wind": "west",
+            "hand_number": 1,
+            "honba": 1,
+            "sticks": 0,
+            "scores": [
+              23800,
+              16900,
+              23400,
+              35900
+            ]
+          },
+          "match": {
+            "ended": true,
+            "reason": "target_reached",
+            "ranking": [
+              3,
+              0,
+              2,
+              1
+            ],
+            "final_deposits": 0,
+            "result_points": [
+              45.9,
+              3.8,
+              -16.6,
+              -33.1
+            ]
+          }
+        },
+        "scope": "saved_failure_regression_not_a_new_hanchan_sample"
+      }
+    },
+    {
+      "path": "data/evaluations/akochan-pilot-03/summary.json",
+      "bytes": 584,
+      "sha256": "82b188d3583481a667b7beeb7f6b9ab915401da92d9988c9314dd19b3c5091d0",
+      "summary": {
+        "status": "complete",
+        "completed_matches": 4,
+        "planned_matches": 4,
+        "complete_seed_blocks": 1,
+        "excluded_partial_block_matches": 0,
+        "metrics": {
+          "rank": {
+            "mean": 3.75,
+            "ci95_normal": null
+          },
+          "points": {
+            "mean": 11275,
+            "ci95_normal": null
+          },
+          "result_points": {
+            "mean": -36.225,
+            "ci95_normal": null
+          }
+        },
+        "rank_rates": [
+          0.0,
+          0.0,
+          0.25,
+          0.75
+        ],
+        "uncertainty": "Approximate normal CI over independent seed-block means; small samples are not strength evidence."
+      }
+    },
+    {
+      "path": "data/evaluations/akochan-pilot-03/verification.json",
+      "bytes": 657,
+      "sha256": "31528e71e9a5e6f947403c26df734cd880e7ece55ad5851217d6470019aeebef",
+      "summary": {
+        "status": "passed",
+        "matches": 4,
+        "hands": 36,
+        "actions": 2016,
+        "replay_hashes_and_settlements": true,
+        "round_transitions": true,
+        "point_conservation": true,
+        "summary_recomputed": true,
+        "external_stderr_empty": true,
+        "results": [
+          {
+            "rotation": 0,
+            "hands": 12,
+            "rank": 4,
+            "points": 14400
+          },
+          {
+            "rotation": 1,
+            "hands": 9,
+            "rank": 4,
+            "points": 16900
+          },
+          {
+            "rotation": 2,
+            "hands": 9,
+            "rank": 3,
+            "points": 16800
+          },
+          {
+            "rotation": 3,
+            "hands": 6,
+            "rank": 4,
+            "points": -3000
+          }
+        ]
+      }
+    },
+    {
+      "path": "data/external-replays/v2-rank-audit-01/fit/report.json",
+      "bytes": 11064,
+      "sha256": "1143328a37f065cec4606c868bd061c39983e948647dceccc6b5240e05d1ca2d",
+      "summary": {
+        "scope": "discard_riichi_imitation",
+        "not_strength_evidence": true,
+        "formula_version": "fixed-v2-opportunity-2",
+        "rounds": 2,
+        "tune": [
+          "ukeire",
+          "lookahead",
+          "value",
+          "bonus",
+          "risk",
+          "reserve",
+          "late_defense",
+          "route",
+          "route_speed",
+          "route_ukeire",
+          "commitment"
+        ],
+        "weights": {
+          "shanten": 4.0,
+          "ukeire": 4.0,
+          "lookahead": 3.0,
+          "value": 3.0,
+          "bonus": 1.0,
+          "risk": 3.5,
+          "reserve": 1.2,
+          "late_defense": 0.8,
+          "route": 4.0,
+          "route_speed": 0.5,
+          "route_ukeire": 2.0,
+          "commitment": 1.0
+        },
+        "parameter_coverage": {
+          "ukeire": {
+            "informative_decisions": 757,
+            "action_kinds": {
+              "discard": 757,
+              "riichi": 33
+            }
+          },
+          "lookahead": {
+            "informative_decisions": 757,
+            "action_kinds": {
+              "discard": 757,
+              "riichi": 33
+            }
+          },
+          "value": {
+            "informative_decisions": 90,
+            "action_kinds": {
+              "discard": 90,
+              "riichi": 33
+            }
+          },
+          "bonus": {
+            "informative_decisions": 453,
+            "action_kinds": {
+              "discard": 453,
+              "riichi": 16
+            }
+          },
+          "risk": {
+            "informative_decisions": 749,
+            "action_kinds": {
+              "discard": 749,
+              "riichi": 33
+            }
+          },
+          "reserve": {
+            "informative_decisions": 44,
+            "action_kinds": {
+              "discard": 44,
+              "riichi": 3
+            }
+          },
+          "late_defense": {
+            "informative_decisions": 749,
+            "action_kinds": {
+              "discard": 749,
+              "riichi": 33
+            }
+          },
+          "route": {
+            "informative_decisions": 740,
+            "action_kinds": {
+              "discard": 740,
+              "riichi": 33
+            }
+          },
+          "route_speed": {
+            "informative_decisions": 380,
+            "action_kinds": {
+              "discard": 380,
+              "riichi": 2
+            }
+          },
+          "route_ukeire": {
+            "informative_decisions": 606,
+            "action_kinds": {
+              "discard": 606,
+              "riichi": 33
+            }
+          },
+          "commitment": {
+            "informative_decisions": 33,
+            "action_kinds": {
+              "discard": 33,
+              "riichi": 33
+            }
+          }
+        },
+        "frozen_no_signal": [],
+        "dataset": {
+          "schema_version": "v2-ranking-features-2",
+          "status": "complete",
+          "code_sha256": "e151d7800a1a863e850aa4522b0d39bbbf0866466dc7cf22cdfca36c785d628d",
+          "rules_profile": "tenhou-4p-hanchan-2026-v1",
+          "rows": {
+            "test": 80,
+            "train": 802,
+            "validation": 118
+          },
+          "source_counts": {
+            "test": 80,
+            "train": 802,
+            "validation": 118
+          },
+          "database_sha256": "99592ff1147c702d185405bdf7b2fa68faae616c5996a57348d9efb7ce8e96e6"
+        },
+        "metrics": {
+          "baseline": {
+            "train": {
+              "total": 802,
+              "evaluated": 757,
+              "conditional": 0,
+              "forced": 45,
+              "skips": {},
+              "loss": 1.467852893105869,
+              "top1": 0.5151915455746368,
+              "tie_adjusted_top1": 0.46602818141787755,
+              "reciprocal_rank": 0.6970765400752186,
+              "v1_top1": 0.6827956989247311,
+              "v1_count": 744
+            },
+            "validation": {
+              "total": 118,
+              "evaluated": 108,
+              "conditional": 0,
+              "forced": 10,
+              "skips": {},
+              "loss": 1.600597079669455,
+              "top1": 0.4722222222222222,
+              "tie_adjusted_top1": 0.4266975308641975,
+              "reciprocal_rank": 0.664024838330394,
+              "v1_top1": 0.719626168224299,
+              "v1_count": 107
+            },
+            "test": {
+              "total": 80,
+              "evaluated": 75,
+              "conditional": 0,
+              "forced": 5,
+              "skips": {},
+              "loss": 1.706312061839273,
+              "top1": 0.5466666666666666,
+              "tie_adjusted_top1": 0.4855555555555555,
+              "reciprocal_rank": 0.7063492063492065,
+              "v1_top1": 0.7671232876712328,
+              "v1_count": 73
+            }
+          },
+          "fitted": {
+            "train": {
+              "total": 802,
+              "evaluated": 757,
+              "conditional": 0,
+              "forced": 45,
+              "skips": {},
+              "loss": 1.3586935747389695,
+              "top1": 0.5614266842800528,
+              "tie_adjusted_top1": 0.5089608102157638,
+              "reciprocal_rank": 0.7269039708273526,
+              "v1_top1": 0.6827956989247311,
+              "v1_count": 744
+            },
+            "validation": {
+              "total": 118,
+              "evaluated": 108,
+              "conditional": 0,
+              "forced": 10,
+              "skips": {},
+              "loss": 1.4320581191196187,
+              "top1": 0.5648148148148148,
+              "tie_adjusted_top1": 0.5146604938271605,
+              "reciprocal_rank": 0.7243977473144141,
+              "v1_top1": 0.719626168224299,
+              "v1_count": 107
+            },
+            "test": {
+              "total": 80,
+              "evaluated": 75,
+              "conditional": 0,
+              "forced": 5,
+              "skips": {},
+              "loss": 1.4676734150085118,
+              "top1": 0.5866666666666667,
+              "tie_adjusted_top1": 0.5255555555555556,
+              "reciprocal_rank": 0.7373703703703703,
+              "v1_top1": 0.7671232876712328,
+              "v1_count": 73
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "data/external-replays/v2-rank-audit-baseline.zip",
+      "bytes": 95868,
+      "sha256": "6f224a24139a75c0a3edf63dccfc72f677ae3456ae093f0d8dc4425c2e80256f"
+    },
+    {
+      "path": "data/external-bots/v2-audit-tests-final.log",
+      "bytes": 25031,
+      "sha256": "f76d1c637630ade8a674aae8f3fef266b90ef714491bd3e18f1a4a860d0d6beb",
+      "summary": [
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 187 tests in 163.698s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "path": "data/external-replays/response-coverage-20261117.json",
+      "bytes": 9807,
+      "sha256": "718ddbc33122012007ae568bb0e64586066433a12beeb53c127e2f8ad6ac119d",
+      "snapshot_date": "2026-11-17",
+      "summary": {
+        "status": "complete",
+        "games": 1000,
+        "deep_games": 40,
+        "events": {
+          "start_game": 1000,
+          "start_kyoku": 10640,
+          "tsumo": 494267,
+          "dahai": 510035,
+          "pon": 11810,
+          "reach": 7744,
+          "reach_accepted": 7442,
+          "hora": 9043,
+          "end_kyoku": 10640,
+          "chi": 8553,
+          "ryukyoku": 1653,
+          "end_game": 1000,
+          "kakan": 325,
+          "dora": 909,
+          "ankan": 530,
+          "daiminkan": 68
+        },
+        "counts": {
+          "discard_windows": 480,
+          "inferred_no_meld": 92,
+          "inferred_no_meld:pon": 30,
+          "no_confirmed_meld_opportunity": 1309,
+          "inferred_no_meld:chi": 65,
+          "observed_meld": 19,
+          "observed_meld:chi": 9,
+          "priority_censored": 3,
+          "priority_censored:chi": 2,
+          "observed_meld:pon": 10,
+          "priority_censored:pon": 1,
+          "ron_permission_unknown": 25,
+          "inferred_no_meld:open_kan": 2,
+          "terminal_or_unresolved": 17,
+          "terminal_or_unresolved:chi": 10,
+          "terminal_or_unresolved:pon": 7
+        },
+        "failures": []
+      }
+    },
+    {
+      "path": "data/external-replays/response-fields-20261117.json",
+      "bytes": 690,
+      "sha256": "e2a11f6b388a61e3c9195b63afb2fa55811f3bc50bd627b61cafd25f78089bcf",
+      "snapshot_date": "2026-11-17",
+      "summary": {
+        "status": "complete",
+        "games": 1000,
+        "counts": {
+          "start_kyoku": 10640,
+          "complete_four_hands": 10640,
+          "four_opening_scores": 10640,
+          "draws": 494267,
+          "draws_with_known_tile": 494267,
+          "discards": 510035,
+          "discards_with_tsumogiri_bool": 510035,
+          "hora": 9043,
+          "hora_four_deltas": 9043,
+          "hora_four_scores": 0,
+          "hora_ura_field": 0,
+          "hora_reason_field": 0,
+          "ryukyoku": 1653,
+          "ryukyoku_four_deltas": 1653,
+          "ryukyoku_four_scores": 0,
+          "ryukyoku_ura_field": 0,
+          "ryukyoku_reason_field": 0,
+          "end_game": 1000,
+          "end_game_scores_field": 0
+        },
+        "all_chunk_hashes_and_source_ids_match_plan": true
+      }
+    },
+    {
+      "path": "data/external-bots/branch-tests-final-20261117.log",
+      "bytes": 27094,
+      "sha256": "38c3ebdd673550b79759d92a2b5e63a05f1d12c35de71b56f4bb2482b87c5771",
+      "snapshot_date": "2026-11-17",
+      "summary": {
+        "status": "passed",
+        "tests": 201,
+        "seconds": 139.137,
+        "new_branch_tests": 12
+      }
+    },
+    {
+      "path": "data/external-bots/rank-value-tests-final-20261117.log",
+      "bytes": 29012,
+      "sha256": "514f51b2c9cf37463259558cc7e7e2d77a5ac055aea086998808b361c97aaa09",
+      "snapshot_date": "2026-11-17",
+      "summary": {
+        "status": "passed",
+        "tests": 215,
+        "seconds": 140.195
+      }
+    },
+    {
+      "path": "data/external-replays/returns-ready-20261117/manifest.json",
+      "bytes": 5490,
+      "sha256": "57aa6ccc4addfe38a766b74e28927c02e620cfa80787b4973c81cc890ad65d11",
+      "snapshot_date": "2026-11-17",
+      "summary": {
+        "schema_version": "match-return-samples-1",
+        "status": "complete",
+        "rules_profile": "tenhou-4p-hanchan-2026-v1",
+        "feature_version": "rank-visible-features-1",
+        "code_sha256": "9ecfd06ea7fa6a2dc84c251b125f1a988344fb4a4496adfa23fdb118f64c2afd",
+        "plan_sha256": "504f089c8ebdfafb3f43d0b182dba27d67d5eb43d44e4cc95da87e5c07d7b041",
+        "source": "D:\\Nanikiru\\data\\external-replays\\v2-round1-A-retry-01\\chunks\\000.tar",
+        "max_samples_per_game": 12,
+        "selection": "source_site_sha256",
+        "games": 3,
+        "samples": 36,
+        "training_performed": false,
+        "counts": {
+          "train:own_decision": 9,
+          "train:round_start": 2,
+          "train:response_observation": 25
+        },
+        "duplicates": 0,
+        "files": {
+          "samples.jsonl": "b71733204eaa931e459ac9103f9efc1b507a191ac9d0f33fe1018bcbffc8ed2d",
+          "labels.jsonl": "b218e22a78d5296c39030f40c67725bb13d00ebd510efae42dbb8947f43e7190"
+        }
+      }
+    },
+    {
+      "path": "data/external-replays/returns-ready-20261117/qa.json",
+      "bytes": 363,
+      "sha256": "0beee2567b701ec08ab8a5421e32abb51c587511aa7e444f17df5b095d236d3d",
+      "snapshot_date": "2026-11-17",
+      "summary": {
+        "status": "complete",
+        "scope": "export_and_untrained_model_QA_not_fitting",
+        "games": 3,
+        "samples": 36,
+        "feature_count": 168,
+        "splits": {
+          "train": 36
+        },
+        "stages": {
+          "own_decision": 9,
+          "round_start": 2,
+          "response_observation": 25
+        },
+        "all_untrained_predictions_unavailable": true,
+        "training_performed": false
+      }
+    }
+  ],
+  "last_extended": "2026-11-17"
+}

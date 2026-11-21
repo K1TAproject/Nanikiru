@@ -1,0 +1,9 @@
+{
+  "rules_profile": "tenhou-4p-hanchan-2026-v1",
+  "bots": {"v1": {"kind": "builtin", "mode": "v1 牌效"}},
+  "candidate": "v1",
+  "opponents": ["v1", "v1", "v1"],
+  "seeds": [18],
+  "max_hands": 100,
+  "max_actions": 500
+}

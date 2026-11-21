@@ -1,0 +1,20 @@
+{
+  "rules_profile": "tenhou-4p-hanchan-2026-v1",
+  "bots": {
+    "candidate-v2": {"kind": "builtin", "mode": "拟合 v2", "weights": "../data/external-replays/v2-rank-audit-01/fit/weights.json"},
+    "akochan": {
+      "kind": "akochan",
+      "command": ["../data/external-bots/akochan/nanikiru-build/akochan.exe", "setup_mjai.json"],
+      "cwd": "../data/external-bots/akochan",
+      "timeout": 60,
+      "artifacts": ["../data/external-bots/akochan/setup_mjai.json", "../data/external-bots/akochan/params", "../data/external-bots/akochan/ai_src", "../tools/akochan_bridge.cpp"],
+      "version": "53188a0b926fbab38177f88c3cd87d554cf412af + MSVC extern and cut_tatu bounds fixes; NPROCS=4",
+      "rules_profile": "tenhou-4p-hanchan-2026-v1"
+    }
+  },
+  "candidate": "candidate-v2",
+  "opponents": ["akochan", "akochan", "akochan"],
+  "seeds": [100, 101, 102, 103],
+  "max_hands": 100,
+  "max_actions": 500
+}

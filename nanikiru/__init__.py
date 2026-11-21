@@ -1,14 +1,10 @@
-"""Observer recording plus a full-state, manually operated single-hand environment."""
+"""Observation data and analysis contracts; no UI or game side effects."""
 
-from .models import (
-    Decision, Discard, DiscardRecord, Draw, DrawnTile, HandState, Meld, MeldKind,
-    Phase, PlayerState, RoundState, Tile,
-)
-from .recorder import RecordError, Recorder
-from .game import Game
-from .scoring import Rules
+from .models import UNKNOWN, RULE_ID, Unknown, TileRecord, PlayerInfo, RoundSnapshot, Event, RoundRecord
+from .contracts import Action, AnalysisRequest, AnalysisResult, CandidateResult, Metric
 
 __all__ = [
-    "Tile", "DrawnTile", "HandState", "Meld", "MeldKind", "DiscardRecord",
-    "PlayerState", "RoundState", "Phase", "Draw", "Discard", "Recorder", "RecordError", "Game", "Decision", "Rules",
+    "UNKNOWN", "RULE_ID", "Unknown", "TileRecord", "PlayerInfo", "RoundSnapshot",
+    "Event", "RoundRecord", "Action", "AnalysisRequest", "AnalysisResult",
+    "CandidateResult", "Metric",
 ]
